@@ -8,7 +8,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import ReactCrop, { type Crop } from 'react-image-crop';
+import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,26 @@ const profileSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters').optional(),
   bio: z.string().max(160, 'Bio cannot be longer than 160 characters').optional(),
 });
+
+function centerAspectCrop(
+  mediaWidth: number,
+  mediaHeight: number,
+  aspect: number,
+) {
+  return centerCrop(
+    makeAspectCrop(
+      {
+        unit: '%',
+        width: 90,
+      },
+      aspect,
+      mediaWidth,
+      mediaHeight,
+    ),
+    mediaWidth,
+    mediaHeight,
+  )
+}
 
 export default function ProfilePage() {
   const { user } = useUser();
@@ -107,10 +127,7 @@ export default function ProfilePage() {
     setUploadProgress(0);
 
     try {
-      const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
-      if (!croppedImageBlob) {
-        throw new Error('Could not crop image.');
-      }
+      const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop, "new-image.jpeg");
       
       const storage = getStorage();
       const storageRef = ref(storage, `profile-pictures/${user.uid}`);
@@ -172,6 +189,11 @@ export default function ProfilePage() {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
+  
+  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const { width, height } = e.currentTarget;
+    setCrop(centerAspectCrop(width, height, 1));
+  }
 
   if (isProfileLoading) return <div>Loading profile...</div>
 
@@ -279,7 +301,7 @@ export default function ProfilePage() {
               aspect={1}
               circularCrop
             >
-              <img ref={imgRef} src={imgSrc} alt="Crop preview" style={{ maxHeight: '70vh' }} />
+              <img ref={imgRef} src={imgSrc} alt="Crop preview" style={{ maxHeight: '70vh' }} onLoad={onImageLoad} />
             </ReactCrop>
             </div>
           )}
@@ -304,38 +326,43 @@ export default function ProfilePage() {
   );
 }
 
-function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<Blob | null> {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    
-    const cropWidth = crop.width ?? 0;
-    const cropHeight = crop.height ?? 0;
-    const cropX = crop.x ?? 0;
-    const cropY = crop.y ?? 0;
+function getCroppedImg(image: HTMLImageElement, crop: Crop, fileName: string): Promise<Blob> {
+  const canvas = document.createElement('canvas');
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
+  
+  const cropX = crop.x * scaleX;
+  const cropY = crop.y * scaleY;
+  const cropWidth = crop.width * scaleX;
+  const cropHeight = crop.height * scaleY;
 
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      resolve(null);
-      return;
-    }
+  canvas.width = cropWidth;
+  canvas.height = cropHeight;
+  const ctx = canvas.getContext('2d');
 
-    ctx.drawImage(
-      image,
-      cropX * scaleX,
-      cropY * scaleY,
-      cropWidth * scaleX,
-      cropHeight * scaleY,
-      0,
-      0,
-      cropWidth,
-      cropHeight
-    );
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
 
+  ctx.drawImage(
+    image,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    cropWidth,
+    cropHeight
+  );
+
+  return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Canvas is empty'));
+        return;
+      }
+      (blob as any).name = fileName;
       resolve(blob);
     }, 'image/jpeg');
   });
