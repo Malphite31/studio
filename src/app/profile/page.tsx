@@ -4,7 +4,7 @@ import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, serverTimestamp, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -127,40 +127,34 @@ export default function ProfilePage() {
 
   const handleCrop = async () => {
     if (!completedCrop || !imgRef.current || !user) return;
-
+  
     setIsUploading(true);
-    setUploadProgress(0);
-
+    setUploadProgress(0); // Reset progress
+  
     try {
-      const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
-      const imageFile = new File([croppedImageBlob], `profile_${user.uid}.jpeg`, { type: 'image/jpeg' });
-      
+      const croppedImageDataUrl = getCroppedImgDataUrl(imgRef.current, completedCrop);
       const storage = getStorage();
       const storageRef = ref(storage, `profile-pictures/${user.uid}`);
-      const uploadTask = uploadBytesResumable(storageRef, imageFile);
-
-      uploadTask.on('state_changed', 
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress);
-        },
-        (error) => {
-          toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
-          setIsUploading(false);
-        },
-        async () => {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            if (userProfileRef) {
-                setDocumentNonBlocking(userProfileRef, { profilePicture: downloadURL }, { merge: true });
-            }
-            toast({ title: 'Success', description: 'Profile picture updated!' });
-            setIsUploading(false);
-            setCropModalOpen(false);
-        }
-      );
+      
+      // Use uploadString with 'data_url' format
+      const uploadTask = uploadString(storageRef, croppedImageDataUrl, 'data_url');
+      
+      // While we don't get progress updates from uploadString, we can handle the final state.
+      await uploadTask;
+  
+      const downloadURL = await getDownloadURL(storageRef);
+      if (userProfileRef) {
+        setDocumentNonBlocking(userProfileRef, { profilePicture: downloadURL }, { merge: true });
+      }
+      
+      toast({ title: 'Success', description: 'Profile picture updated!' });
     } catch (error: any) {
+      console.error("Upload failed:", error);
       toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
+    } finally {
       setIsUploading(false);
+      setCropModalOpen(false);
+      setUploadProgress(100); // Set to 100 on completion or failure for UI feedback
     }
   };
 
@@ -456,8 +450,8 @@ export default function ProfilePage() {
           <DialogFooter>
             {isUploading ? (
               <div className="w-full">
-                <Progress value={uploadProgress} className="w-full" />
-                <p className="text-center text-sm mt-2">{Math.round(uploadProgress)}%</p>
+                <p className="text-center text-sm">Uploading...</p>
+                <Progress value={100} className="w-full animate-pulse" />
               </div>
             ) : (
             <>
@@ -490,45 +484,38 @@ export default function ProfilePage() {
   );
 }
 
-function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<Blob> {
-  const canvas = document.createElement('canvas');
-  const scaleX = image.naturalWidth / image.width;
-  const scaleY = image.naturalHeight / image.height;
+function getCroppedImgDataUrl(image: HTMLImageElement, crop: Crop): string {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    const cropX = crop.x * scaleX;
+    const cropY = crop.y * scaleY;
+    const cropWidth = crop.width * scaleX;
+    const cropHeight = crop.height * scaleY;
   
-  const cropX = crop.x * scaleX;
-  const cropY = crop.y * scaleY;
-  const cropWidth = crop.width * scaleX;
-  const cropHeight = crop.height * scaleY;
-
-  canvas.width = cropWidth;
-  canvas.height = cropHeight;
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) {
-    throw new Error('No 2d context');
-  }
-
-  ctx.drawImage(
-    image,
-    cropX,
-    cropY,
-    cropWidth,
-    cropHeight,
-    0,
-    0,
-    cropWidth,
-    cropHeight
-  );
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('Canvas is empty'));
-        return;
-      }
-      resolve(blob);
-    }, 'image/jpeg', 0.95);
-  });
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+    const ctx = canvas.getContext('2d');
+  
+    if (!ctx) {
+      throw new Error('No 2d context');
+    }
+  
+    ctx.drawImage(
+      image,
+      cropX,
+      cropY,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      cropWidth,
+      cropHeight
+    );
+  
+    // Return the image as a data URL (Base64 encoded string)
+    return canvas.toDataURL('image/jpeg', 0.95);
 }
 
     
