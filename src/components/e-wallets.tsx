@@ -19,7 +19,6 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import type { EWallet } from '@/lib/types';
-import { ScrollArea } from './ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
@@ -91,71 +90,69 @@ export default function EWallets({ wallets, addWallet, updateWallet, deleteWalle
         <CardDescription>Your digital and physical money sources.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-48 pr-4">
-          <div className="space-y-2">
-            {wallets.length > 0 ? (
-              wallets.map((wallet) => (
-                <div key={wallet.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 group">
-                  <div className="flex items-center gap-3">
-                    <Wallet className="h-5 w-5 text-primary" />
-                    <div className='flex flex-col'>
-                        <span className="font-medium">{wallet.name}</span>
-                        {wallet.id !== 'cash' && 
-                          <span className='text-xs text-muted-foreground'>E-Wallet</span>
-                        }
-                    </div>
-                  </div>
-                  <div className='flex items-center gap-2'>
-                    <span className="font-semibold">{formatCurrency(wallet.balance)}</span>
-                    {wallet.id !== 'cash' && (
-                       <AlertDialog>
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onSelect={() => handleEditClick(wallet)}>
-                                      <Pencil className="mr-2 h-4 w-4" />
-                                      Edit
-                                  </DropdownMenuItem>
-                                  <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                          <Trash2 className="mr-2 h-4 w-4" />
-                                          Delete
-                                      </DropdownMenuItem>
-                                  </AlertDialogTrigger>
-                              </DropdownMenuContent>
-                          </DropdownMenu>
-
-                           <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Are you sure you want to delete this wallet? This might affect transaction history but won't delete the transactions themselves. This action cannot be undone.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={() => handleDeleteClick(wallet)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                        Yes, Delete
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                       </AlertDialog>
-                    )}
+        <div className="space-y-2">
+          {wallets.length > 0 ? (
+            wallets.map((wallet) => (
+              <div key={wallet.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 group">
+                <div className="flex items-center gap-3">
+                  <Wallet className="h-5 w-5 text-primary" />
+                  <div className='flex flex-col'>
+                      <span className="font-medium">{wallet.name}</span>
+                      {wallet.id !== 'cash' && 
+                        <span className='text-xs text-muted-foreground'>E-Wallet</span>
+                      }
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-center text-muted-foreground py-4 text-sm">No cash or e-wallets added yet.</p>
-            )}
-          </div>
-        </ScrollArea>
+                <div className='flex items-center gap-2'>
+                  <span className="font-semibold">{formatCurrency(wallet.balance)}</span>
+                  {wallet.id !== 'cash' && (
+                     <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => handleEditClick(wallet)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                </DropdownMenuItem>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                         <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      Are you sure you want to delete this wallet? This might affect transaction history but won't delete the transactions themselves. This action cannot be undone.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                      onClick={() => handleDeleteClick(wallet)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                      Yes, Delete
+                                  </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                     </AlertDialog>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-muted-foreground py-4 text-sm">No cash or e-wallets added yet.</p>
+          )}
+        </div>
       </CardContent>
       <CardFooter className='flex-col items-stretch gap-4'>
         <div className='flex justify-between items-center font-bold border-t pt-4'>
