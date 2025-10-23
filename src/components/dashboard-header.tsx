@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,7 @@ export default function DashboardHeader({
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left">
+                    <SheetTitle className="sr-only">Menu</SheetTitle>
                     <nav className="grid gap-6 text-lg font-medium">
                         <Link
                         href="#"
