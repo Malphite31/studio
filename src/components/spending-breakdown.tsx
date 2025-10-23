@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 
 import {
@@ -78,26 +78,37 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
         {totalSpent > 0 ? (
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px] sm:max-h-[300px]"
+          className="mx-auto aspect-video max-h-[250px] sm:max-h-[300px]"
         >
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <BarChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="category"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => value.slice(0, 3)}
+              />
+              <YAxis 
+                tickFormatter={(value) => `₱${value}`}
+                tickLine={false}
+                axisLine={false}
+              />
               <Tooltip
                 cursor={false}
-                content={<ChartTooltipContent hideLabel nameKey="category" />}
+                content={<ChartTooltipContent 
+                    formatter={(value, name) => (
+                        <div className="flex flex-col">
+                            <span className="font-bold">{name}</span>
+                            <span>{formatCurrency(value as number)}</span>
+                        </div>
+                    )}
+                    hideLabel
+                />}
               />
-              <Pie
-                data={chartData}
-                dataKey="total"
-                nameKey="category"
-                innerRadius="60%"
-                strokeWidth={5}
-              >
-                 {chartData.map((entry) => (
-                    <Cell key={`cell-${entry.category}`} fill={entry.fill} />
-                  ))}
-              </Pie>
-            </PieChart>
+              <Bar dataKey="total" radius={8} />
+            </BarChart>
           </ResponsiveContainer>
         </ChartContainer>
         ) : (
