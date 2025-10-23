@@ -10,7 +10,7 @@ import Wishlist from '@/components/wishlist';
 import DebtTracker from '@/components/debt-tracker';
 import IncomeTracker from '@/components/income-tracker';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, query, where } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Login from '@/components/login';
@@ -47,7 +47,7 @@ export default function DashboardPage() {
   const { data: budgetGoalsData, isLoading: budgetsLoading } = useCollection<BudgetGoal>(budgetGoalsQuery);
 
   const wishlistQuery = useMemoFirebase(() =>
-    user ? collection(firestore, 'users', user.uid, 'wishlist') : null,
+    user ? query(collection(firestore, 'users', user.uid, 'wishlist'), where('purchased', '!=', true)) : null,
     [user, firestore]
   );
   const { data: wishlistItems, isLoading: wishlistLoading } = useCollection<WishlistItemType>(wishlistQuery);
@@ -137,8 +137,9 @@ export default function DashboardPage() {
       ...item,
       savedAmount: 0,
       userId: user.uid,
+      purchased: false,
     };
-    addDocumentNonBlocking(wishlistQuery, newWishlistItem);
+    addDocumentNonBlocking(collection(firestore, 'users', user.uid, 'wishlist'), newWishlistItem);
   };
 
   const contributeToWishlist = (id: string, amount: number, currentSaved: number, targetAmount: number) => {
@@ -152,6 +153,21 @@ export default function DashboardPage() {
     if (!user) return;
     const iouDocRef = doc(firestore, 'users', user.uid, 'ious', id);
     setDocumentNonBlocking(iouDocRef, { paid: true }, { merge: true });
+  }
+
+  const purchaseWishlistItem = (item: WishlistItemType) => {
+    if(!user) return;
+
+    // 1. Add an expense
+    addExpense({
+      name: `(Wishlist) ${item.name}`,
+      amount: item.targetAmount,
+      category: 'Other'
+    });
+
+    // 2. Mark the wishlist item as purchased
+    const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', item.id);
+    setDocumentNonBlocking(wishlistItemRef, { purchased: true }, { merge: true });
   }
 
   if (isUserLoading) {
@@ -203,7 +219,7 @@ export default function DashboardPage() {
                       items={wishlistItems || []}
                       addWishlistItem={addWishlistItem}
                       contributeToWishlist={contributeToWishlist}
-                      addExpense={addExpense}
+                      purchaseWishlistItem={purchaseWishlistItem}
                     />
                   </CardContent>
                 </Card>

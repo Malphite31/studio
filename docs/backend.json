@@ -164,6 +164,10 @@
         "userId": {
           "type": "string",
           "description": "The ID of the user who owns this wishlist item."
+        },
+        "purchased": {
+          "type": "boolean",
+          "description": "Whether the wishlist item has been purchased."
         }
       },
       "required": [

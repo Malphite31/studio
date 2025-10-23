@@ -25,6 +25,7 @@ export interface WishlistItem {
   targetAmount: number;
   savedAmount: number;
   userId: string;
+  purchased?: boolean;
 }
 
 export type IouType = 'Borrow' | 'Lent';

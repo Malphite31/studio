@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Gift, Sparkles, ShoppingCart } from 'lucide-react';
 
-import type { WishlistItem as WishlistItemType, Expense } from '@/lib/types';
+import type { WishlistItem as WishlistItemType } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -32,10 +31,10 @@ const formSchema = z.object({
 interface WishlistItemProps {
   item: WishlistItemType;
   contributeToWishlist: (id: string, amount: number, currentSaved: number, targetAmount: number) => void;
-  addExpense: (expense: Omit<Expense, 'id' | 'date' | 'userId'>) => void;
+  purchaseWishlistItem: (item: WishlistItemType) => void;
 }
 
-export default function WishlistItem({ item, contributeToWishlist, addExpense }: WishlistItemProps) {
+export default function WishlistItem({ item, contributeToWishlist, purchaseWishlistItem }: WishlistItemProps) {
   const { toast } = useToast();
   
   const isGoalReached = item.savedAmount >= item.targetAmount;
@@ -56,11 +55,7 @@ export default function WishlistItem({ item, contributeToWishlist, addExpense }:
   }
 
   const handleBuy = () => {
-    addExpense({
-      name: `(Wishlist) ${item.name}`,
-      amount: item.targetAmount,
-      category: 'Other'
-    });
+    purchaseWishlistItem(item);
     toast({
         title: "Item Purchased!",
         description: `Enjoy your new ${item.name}! An expense has been recorded, and your balance is updated.`,
@@ -119,7 +114,7 @@ export default function WishlistItem({ item, contributeToWishlist, addExpense }:
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
           <AlertDialogDescription>
-            This will record the purchase of your {item.name} for ₱{item.targetAmount.toFixed(2)}. This action will create a new expense and cannot be undone.
+            This will record the purchase of your {item.name} for ₱{item.targetAmount.toFixed(2)}. This action will create a new expense and remove the item from your wishlist. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
