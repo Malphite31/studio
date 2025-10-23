@@ -70,7 +70,7 @@ export default function ProfilePage() {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<Crop>();
   const [isCropModalOpen, setCropModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(isUploading);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
@@ -525,8 +525,9 @@ function getCroppedImg(image: HTMLImageElement, crop: Crop, fileName: string): P
         reject(new Error('Canvas is empty'));
         return;
       }
-      (blob as any).name = fileName;
-      resolve(blob);
-    }, 'image/jpeg');
+      resolve(new Blob([blob], { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.95);
   });
 }
+
+    
