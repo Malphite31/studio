@@ -5,6 +5,8 @@ import Link from 'next/link';
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -93,6 +95,9 @@ export default function DashboardHeader({
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left">
+                    <SheetHeader>
+                        <SheetTitle className="sr-only">Menu</SheetTitle>
+                    </SheetHeader>
                     <div className="flex items-center gap-2 text-lg font-semibold mb-6">
                         <Coins className="h-6 w-6 text-primary" />
                         <span>SpendWise</span>
