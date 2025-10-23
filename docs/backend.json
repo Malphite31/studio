@@ -23,6 +23,10 @@
           "type": "string",
           "description": "URL or path to the user's profile picture.",
           "format": "uri"
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short bio or description about the user."
         }
       },
       "required": [

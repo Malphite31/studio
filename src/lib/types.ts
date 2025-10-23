@@ -44,6 +44,7 @@ export interface UserProfile {
     username: string;
     email: string;
     profilePicture?: string;
+    bio?: string;
 }
 
 export interface Income {
