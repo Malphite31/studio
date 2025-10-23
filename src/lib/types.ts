@@ -65,3 +65,16 @@ export interface EWallet {
     balance: number;
     userId: string;
 }
+
+
+// A type representing the structure of the data to be exported/imported.
+export interface ExportData {
+  expenses: Expense[];
+  income: Income[];
+  budgets: BudgetGoal[];
+  ious: Iou[];
+  wishlist: WishlistItem[];
+  wallets: EWallet[];
+}
+
+    

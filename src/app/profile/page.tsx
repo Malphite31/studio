@@ -2,7 +2,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useForm } from 'react-hook-form';
@@ -14,7 +14,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -26,6 +26,7 @@ import { ArrowLeft, UploadCloud } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { ConfirmationDialog } from '@/components/confirmation-dialog';
 
 
 const profileSchema = z.object({
@@ -63,6 +64,7 @@ export default function ProfilePage() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
@@ -71,6 +73,8 @@ export default function ProfilePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
+  const [fileToImport, setFileToImport] = useState<File | null>(null);
 
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -189,6 +193,98 @@ export default function ProfilePage() {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
+
+  const handleExport = async () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to export data.' });
+        return;
+    }
+    toast({ title: 'Exporting...', description: 'Gathering your data. The download will begin shortly.' });
+
+    try {
+        const collectionsToExport = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
+        const exportData: Record<string, any[]> = {};
+
+        for (const collectionName of collectionsToExport) {
+            const collectionRef = collection(firestore, 'users', user.uid, collectionName);
+            const snapshot = await getDocs(collectionRef);
+            exportData[collectionName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'spendwise_backup.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast({ title: 'Export Complete!', description: 'Your data has been downloaded.' });
+
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Export Failed', description: error.message });
+    }
+  };
+
+  const handleImportFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type === 'application/json') {
+      setFileToImport(file);
+      setImportConfirmOpen(true);
+    } else {
+      toast({ variant: 'destructive', title: 'Invalid File', description: 'Please select a valid JSON file.' });
+    }
+    // Reset file input to allow re-selection of the same file
+    if (importFileInputRef.current) {
+        importFileInputRef.current.value = '';
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!user || !fileToImport) return;
+
+    setImportConfirmOpen(false);
+    toast({ title: 'Importing Data...', description: 'Please do not close this window.' });
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = JSON.parse(e.target?.result as string);
+            const batch = writeBatch(firestore);
+            
+            // Delete all existing data
+            const collectionsToDelete = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
+            for (const collectionName of collectionsToDelete) {
+                const collectionRef = collection(firestore, 'users', user.uid, collectionName);
+                const snapshot = await getDocs(collectionRef);
+                snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            }
+            
+            // Import new data
+            for (const collectionName in data) {
+                const collectionData = data[collectionName];
+                if (Array.isArray(collectionData)) {
+                    collectionData.forEach((item: any) => {
+                        const { id, ...itemData } = item;
+                        const docRef = doc(firestore, 'users', user.uid, collectionName, id);
+                        batch.set(docRef, itemData);
+                    });
+                }
+            }
+
+            await batch.commit();
+            toast({ title: 'Import Successful!', description: 'All your data has been restored.' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Import Failed', description: error.message });
+        } finally {
+            setFileToImport(null);
+        }
+    };
+    reader.readAsText(fileToImport);
+  };
   
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
@@ -205,86 +301,112 @@ export default function ProfilePage() {
                 <Link href="/"><ArrowLeft className='mr-2' /> Back to Dashboard</Link>
             </Button>
         </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Profile</CardTitle>
-            <CardDescription>Manage your account settings, profile picture and bio.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div 
-              className={cn(
-                "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
-                "hover:border-primary hover:bg-accent",
-                isDragging ? "border-primary bg-accent" : "border-input"
-              )}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
-              <div className="flex flex-col items-center gap-4">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={userProfile?.profilePicture} />
-                    <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className='flex flex-col items-center gap-1'>
-                    <UploadCloud className="w-8 h-8 text-muted-foreground" />
-                    <p className='font-semibold'>Drag & drop or click to upload</p>
-                    <p className='text-sm text-muted-foreground'>Recommended size: 400x400px</p>
-                  </div>
-              </div>
-            </div>
+        <div className='grid gap-8'>
+            <Card>
+            <CardHeader>
+                <CardTitle>Your Profile</CardTitle>
+                <CardDescription>Manage your account settings, profile picture and bio.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div 
+                className={cn(
+                    "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+                    "hover:border-primary hover:bg-accent",
+                    isDragging ? "border-primary bg-accent" : "border-input"
+                )}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                >
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+                <div className="flex flex-col items-center gap-4">
+                    <Avatar className="h-24 w-24">
+                        <AvatarImage src={userProfile?.profilePicture} />
+                        <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className='flex flex-col items-center gap-1'>
+                        <UploadCloud className="w-8 h-8 text-muted-foreground" />
+                        <p className='font-semibold'>Drag & drop or click to upload</p>
+                        <p className='text-sm text-muted-foreground'>Recommended size: 400x400px</p>
+                    </div>
+                </div>
+                </div>
 
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
+                <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Your username" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Your username" {...field} />
-                      </FormControl>
-                      <FormMessage />
+                        <FormLabel>Email</FormLabel>
+                        <Input value={user?.email || ''} disabled />
                     </FormItem>
-                  )}
-                />
-                <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <Input value={user?.email || ''} disabled />
-                </FormItem>
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Tell us a little about yourself" className="resize-none" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit">Save Changes</Button>
-              </form>
-            </Form>
+                    <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Bio</FormLabel>
+                        <FormControl>
+                            <Textarea placeholder="Tell us a little about yourself" className="resize-none" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <Button type="submit">Save Changes</Button>
+                </form>
+                </Form>
 
-            <Separator />
+                <Separator />
 
-            <div>
-                <h3 className="text-lg font-medium">Security</h3>
-                <p className="text-sm text-muted-foreground">Manage your password.</p>
-                <Button variant="outline" className="mt-4" onClick={handlePasswordReset}>
-                    Send Password Reset Email
-                </Button>
-            </div>
+                <div>
+                    <h3 className="text-lg font-medium">Security</h3>
+                    <p className="text-sm text-muted-foreground">Manage your password.</p>
+                    <Button variant="outline" className="mt-4" onClick={handlePasswordReset}>
+                        Send Password Reset Email
+                    </Button>
+                </div>
 
-          </CardContent>
-        </Card>
+            </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Data Management</CardTitle>
+                    <CardDescription>Export your data or import it from a backup file.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                     <Button variant="outline" onClick={handleExport}>Export My Data</Button>
+                     <Button variant="destructive" onClick={() => importFileInputRef.current?.click()}>Import Data</Button>
+                     <input
+                        type="file"
+                        ref={importFileInputRef}
+                        className="hidden"
+                        accept="application/json"
+                        onChange={handleImportFileSelect}
+                    />
+                </CardContent>
+                 <CardFooter>
+                    <p className='text-xs text-muted-foreground'>
+                        <strong>Warning:</strong> Importing data will overwrite all current data in your account.
+                    </p>
+                </CardFooter>
+            </Card>
+
+        </div>
       </div>
 
       <Dialog open={isCropModalOpen} onOpenChange={setCropModalOpen}>
@@ -322,6 +444,14 @@ export default function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmationDialog
+        open={isImportConfirmOpen}
+        onOpenChange={setImportConfirmOpen}
+        title="Are you absolutely sure?"
+        description="This action cannot be undone. This will permanently delete all your current data and overwrite it with the backup file."
+        onConfirm={handleImportConfirm}
+        confirmText="Yes, overwrite my data"
+      />
     </>
   );
 }
