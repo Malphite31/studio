@@ -22,6 +22,8 @@ import { Timestamp } from 'firebase/firestore';
 import { ExpenseForm } from './expense-form';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
 import { EditDeleteButtons } from './edit-delete-buttons';
+import { Pencil } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface RecentExpensesProps {
   expenses: Expense[];
@@ -68,7 +70,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                 const Icon = CategoryIcons[expense.category];
                 const expenseDate = expense.date instanceof Timestamp ? expense.date.toDate() : new Date();
                 return (
-                  <TableRow key={expense.id}>
+                  <TableRow key={expense.id} className="group">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center justify-center w-8 h-8 bg-secondary rounded-full">
@@ -90,13 +92,18 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                             onEdit={() => {}} // The form itself is the edit button
                             onDelete={() => onDeleteExpense(expense)}
                             deleteWarning="Are you sure you want to delete this expense? This will revert the amount from the associated wallet."
+                            className="opacity-0 group-hover:opacity-100"
                         >
                             <ExpenseForm
                                 triggerType="edit"
                                 wallets={allWallets}
                                 expenseToEdit={expense}
                                 onUpdate={onUpdateExpense}
-                            />
+                            >
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                            </ExpenseForm>
                         </EditDeleteButtons>
                     </TableCell>
                   </TableRow>

@@ -89,7 +89,7 @@ export function IncomeForm({
   }
 
   const TriggerButton = triggerType === 'edit'
-    ? <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(true)}>{children || 'Edit'}</Button>
+    ? <span onClick={() => setOpen(true)}>{children}</span>
     : <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>{children}</Button>;
 
   return (

@@ -13,17 +13,19 @@ import {
 import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface EditDeleteButtonsProps {
     onEdit: () => void;
     onDelete: () => void;
     deleteWarning: string;
     children?: React.ReactNode; // For the edit form/button
+    className?: string;
 }
 
-export function EditDeleteButtons({ onEdit, onDelete, deleteWarning, children }: EditDeleteButtonsProps) {
+export function EditDeleteButtons({ onEdit, onDelete, deleteWarning, children, className }: EditDeleteButtonsProps) {
   return (
-    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className={cn("flex items-center justify-end gap-1 transition-opacity", className)}>
         {children}
         <AlertDialog>
             <AlertDialogTrigger asChild>

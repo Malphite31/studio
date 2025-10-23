@@ -22,7 +22,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EditDeleteButtons } from './edit-delete-buttons';
 import { IncomeForm } from './income-form';
-import { PlusCircle } from 'lucide-react';
+import { Pencil, PlusCircle } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface IncomeTrackerProps {
@@ -68,7 +68,7 @@ export default function IncomeTracker({ income, wallets, onUpdateIncome, onDelet
                 sortedIncome.map((item) => {
                   const incomeDate = item.date instanceof Timestamp ? item.date.toDate() : item.date;
                   return (
-                    <TableRow key={item.id}>
+                    <TableRow key={item.id} className="group">
                       <TableCell className='p-2'>
                           <div className="font-medium text-sm">{item.name}</div>
                           <div className="text-xs text-muted-foreground">
@@ -83,13 +83,18 @@ export default function IncomeTracker({ income, wallets, onUpdateIncome, onDelet
                           onEdit={() => {}}
                           onDelete={() => onDeleteIncome(item)}
                           deleteWarning="Are you sure you want to delete this income record?"
+                          className="opacity-0 group-hover:opacity-100"
                         >
                           <IncomeForm
                             triggerType="edit"
                             wallets={wallets}
                             incomeToEdit={item}
                             onUpdate={onUpdateIncome}
-                           />
+                           >
+                             <Button variant="ghost" size="icon" className="h-7 w-7">
+                               <Pencil className="h-4 w-4" />
+                             </Button>
+                           </IncomeForm>
                         </EditDeleteButtons>
                       </TableCell>
                     </TableRow>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Wallet, PlusCircle } from 'lucide-react';
+import { Wallet, PlusCircle, Pencil } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -110,7 +110,12 @@ export default function EWallets({ wallets, addWallet, updateWallet, deleteWalle
                             onEdit={() => handleEditClick(wallet)}
                             onDelete={() => handleDeleteClick(wallet)}
                             deleteWarning="Are you sure you want to delete this wallet? This might affect transaction history but won't delete the transactions themselves."
-                        />
+                            className="opacity-0 group-hover:opacity-100"
+                        >
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditClick(wallet)}>
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        </EditDeleteButtons>
                     )}
                   </div>
                 </div>

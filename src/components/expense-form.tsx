@@ -70,9 +70,10 @@ interface ExpenseFormProps {
   wallets: EWallet[];
   expenseToEdit?: Expense;
   onUpdate?: (expenseId: string, oldAmount: number, updatedData: Partial<Expense>) => void;
+  children?: React.ReactNode;
 }
 
-export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallets, expenseToEdit, onUpdate }: ExpenseFormProps) {
+export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallets, expenseToEdit, onUpdate, children }: ExpenseFormProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
@@ -163,7 +164,7 @@ export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallet
           <span className="sr-only">Add Transaction</span>
       </Button>
     ) : triggerType === 'edit' ? (
-      <Button variant="ghost" size="sm">Edit</Button>
+      <span onClick={() => setOpen(true)}>{children}</span>
     ) : (
       <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
