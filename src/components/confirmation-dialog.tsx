@@ -10,7 +10,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from './ui/button';
 
 interface ConfirmationDialogProps {
   open: boolean;
