@@ -86,7 +86,7 @@ export default function DashboardHeader({
                     <span className={cn(
                         "font-semibold text-sm",
                         balance > 0 && "text-green-400",
-                        balance < 0 && "text-red-400",
+                        balance < 0 && "text-red-500",
                     )}>
                         {formatCurrency(balance)}
                     </span>
