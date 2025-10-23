@@ -33,18 +33,7 @@ export function ThemeSwitcher() {
   const { setTheme, theme } = useTheme();
 
   const handleThemeChange = (newTheme: string) => {
-    const currentMode = theme?.startsWith('dark') ? 'dark' : 'light';
-    const baseTheme = theme?.split(' ')[0];
-    
-    if (newTheme === 'light' || newTheme === 'dark' || newTheme === 'system') {
-        const colorClass = themes.find(t => t.value === baseTheme)?.value || '';
-        document.body.className = `${newTheme} ${colorClass}`;
-        setTheme(newTheme);
-    } else {
-      // it's a color theme
-      document.body.className = `${currentMode} ${newTheme}`;
-      setTheme(newTheme);
-    }
+    setTheme(newTheme);
   };
 
   return (
