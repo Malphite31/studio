@@ -17,8 +17,8 @@ import {
   ChartContainer,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import type { Expense } from '@/lib/types';
-import { CATEGORY_COLORS } from '@/lib/data';
+import type { Expense, Category } from '@/lib/types';
+import { CATEGORIES } from '@/lib/data';
 
 interface SpendingBreakdownProps {
   expenses: Expense[];
@@ -44,10 +44,10 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
       {} as Record<string, number>
     );
 
-    const chartData = Object.entries(dataByCat).map(([category, total]) => ({
+    const chartData = CATEGORIES.map((category, index) => ({
       category,
-      total,
-      fill: CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS],
+      total: dataByCat[category] || 0,
+      fill: `hsl(var(--chart-${(index % 5) + 1}))`,
     }));
 
     const chartConfig: ChartConfig = chartData.reduce((acc, data) => {
