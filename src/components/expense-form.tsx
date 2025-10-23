@@ -41,10 +41,10 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/lib/data';
-import type { Expense, Iou } from '@/lib/types';
+import type { Expense, Iou, Income } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
-const FormCategories = [...CATEGORIES, 'Borrow', 'Lent'] as const;
+const FormCategories = ['Income', ...CATEGORIES, 'Borrow', 'Lent'] as const;
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -63,9 +63,10 @@ type FormValues = z.infer<typeof formSchema>;
 interface ExpenseFormProps {
   addExpense: (expense: Omit<Expense, 'id' | 'date' | 'userId'>) => void;
   addIou: (iou: Omit<Iou, 'id' | 'paid' | 'userId'>) => void;
+  addIncome: (income: Omit<Income, 'id' | 'date' | 'userId'>) => void;
 }
 
-export function ExpenseForm({ addExpense, addIou }: ExpenseFormProps) {
+export function ExpenseForm({ addExpense, addIou, addIncome }: ExpenseFormProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
@@ -93,11 +94,20 @@ export function ExpenseForm({ addExpense, addIou }: ExpenseFormProps) {
         title: "IOU tracked!",
         description: `Your ${values.category.toLowerCase()} transaction has been recorded.`,
       })
+    } else if (values.category === 'Income') {
+        addIncome({
+            name: values.name,
+            amount: values.amount,
+        });
+        toast({
+            title: 'Income added!',
+            description: `You've recorded an income of ₱${values.amount}.`,
+        });
     } else {
       const expenseData: Omit<Expense, 'id'| 'date' | 'userId'> = {
         name: values.name,
         amount: values.amount,
-        category: values.category,
+        category: values.category as (typeof CATEGORIES)[number],
       };
       addExpense(expenseData);
       toast({
@@ -122,7 +132,7 @@ export function ExpenseForm({ addExpense, addIou }: ExpenseFormProps) {
         <DialogHeader>
           <DialogTitle>Add a New Transaction</DialogTitle>
           <DialogDescription>
-            Enter the details of your expense, borrowing, or lending.
+            Enter the details of your expense, income, borrowing, or lending.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -161,7 +171,11 @@ export function ExpenseForm({ addExpense, addIou }: ExpenseFormProps) {
                 <FormItem>
                   <FormLabel>Name / Description</FormLabel>
                   <FormControl>
-                    <Input placeholder={category === 'Borrow' ? 'e.g., Loan from Mom' : category === 'Lent' ? 'e.g., Lunch for a friend' : 'e.g., Coffee'} {...field} />
+                    <Input placeholder={
+                        category === 'Income' ? 'e.g., Monthly Salary' :
+                        category === 'Borrow' ? 'e.g., Loan from Mom' : 
+                        category === 'Lent' ? 'e.g., Lunch for a friend' : 'e.g., Coffee'
+                        } {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

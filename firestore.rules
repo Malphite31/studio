@@ -1,29 +1,166 @@
-
+/**
+ * @fileoverview Firestore Security Rules for SpendWise application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model.  Each user can only
+ * access their own data, preventing unauthorized access to other users'
+ * financial information.  All data is nested under /users/{userId}, where
+ * {userId} corresponds to the Firebase Authentication UID.
+ *
+ * Data Structure:
+ * The Firestore database is structured with a top-level /users collection.
+ * Each document in /users represents a user profile. Subcollections under
+ * each user document store the user's expenses, categories, budgets, wishlist
+ * items and IOUs.
+ *
+ * Key Security Decisions:
+ * - User listing is explicitly denied for privacy.
+ * - All write operations are validated against the authenticated user's UID.
+ * - No data validation beyond authorization checks is performed in this
+ *   prototyping phase.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    /**
+     * @description Defines a global function to check if a user is signed in.
+     * @principle Ensures that only authenticated users can access certain data.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Defines a global function to check if the request is made by the owner of the resource.
+     * @principle Enforces user-ownership for data access.
+     * @param {string} userId The user ID to compare against the request's auth UID.
+     * @return {bool} True if the user ID matches the request's auth UID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Defines a global function to check if the request is made by the owner of the resource and the document exists.
+     * @principle Enforces user-ownership and prevents operations on non-existent documents.
+     * @param {string} userId The user ID to compare against the request's auth UID.
+     * @return {bool} True if the user ID matches the request's auth UID and the resource exists.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for the /users/{userId} document.
+     * @path /users/{userId}
+     * @allow (create) User with UID 'user_abc' can create their profile document with id 'user_abc'.
+     * @deny (create) User with UID 'user_abc' cannot create a profile document with id 'user_xyz'.
+     * @allow (get) User with UID 'user_abc' can get their own profile document.
+     * @deny (get) User with UID 'user_abc' cannot get profile document of user 'user_xyz'.
+     * @principle Enforces document ownership, only the user can read/write their profile.
+     */
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
 
-      match /expenses/{expenseId} {
-        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
-      }
+    /**
+     * @description Rules for the /users/{userId}/expenses/{expenseId} collection.
+     * @path /users/{userId}/expenses/{expenseId}
+     * @allow (create) User with UID 'user_abc' can create an expense in their own expenses collection.
+     * @deny (create) User with UID 'user_abc' cannot create an expense in user 'user_xyz' expenses collection.
+     * @allow (get) User with UID 'user_abc' can get an expense from their own expenses collection.
+     * @deny (get) User with UID 'user_abc' cannot get an expense from user 'user_xyz' expenses collection.
+     * @allow (list) User with UID 'user_abc' can list expenses from their own expenses collection.
+     * @deny (list) User with UID 'user_abc' cannot list expenses from user 'user_xyz' expenses collection.
+     * @principle Enforces document ownership, only the user can read/write their expenses.
+     */
+    match /users/{userId}/expenses/{expenseId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
 
-      match /categories/{categoryId} {
-        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
-      }
+    /**
+     * @description Rules for the /users/{userId}/categories/{categoryId} collection.
+     * @path /users/{userId}/categories/{categoryId}
+     * @allow (create) User with UID 'user_abc' can create a category in their own categories collection.
+     * @deny (create) User with UID 'user_abc' cannot create a category in user 'user_xyz' categories collection.
+     * @allow (get) User with UID 'user_abc' can get a category from their own categories collection.
+     * @deny (get) User with UID 'user_abc' cannot get a category from user 'user_xyz' categories collection.
+     * @allow (list) User with UID 'user_abc' can list categories from their own categories collection.
+     * @deny (list) User with UID 'user_abc' cannot list categories from user 'user_xyz' categories collection.
+     * @principle Enforces document ownership, only the user can read/write their categories.
+     */
+    match /users/{userId}/categories/{categoryId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
 
-      match /budgets/{budgetId} {
-        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
-      }
+    /**
+     * @description Rules for the /users/{userId}/budgets/{budgetId} collection.
+     * @path /users/{userId}/budgets/{budgetId}
+     * @allow (create) User with UID 'user_abc' can create a budget in their own budgets collection.
+     * @deny (create) User with UID 'user_abc' cannot create a budget in user 'user_xyz' budgets collection.
+     * @allow (get) User with UID 'user_abc' can get a budget from their own budgets collection.
+     * @deny (get) User with UID 'user_abc' cannot get a budget from user 'user_xyz' budgets collection.
+     * @allow (list) User with UID 'user_abc' can list budgets from their own budgets collection.
+     * @deny (list) User with UID 'user_abc' cannot list budgets from user 'user_xyz' budgets collection.
+     * @principle Enforces document ownership, only the user can read/write their budgets.
+     */
+    match /users/{userId}/budgets/{budgetId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
 
-      match /wishlist/{wishlistId} {
-        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
-      }
+    /**
+     * @description Rules for the /users/{userId}/wishlist/{wishlistId} collection.
+     * @path /users/{userId}/wishlist/{wishlistId}
+     * @allow (create) User with UID 'user_abc' can create a wishlist item in their own wishlist collection.
+     * @deny (create) User with UID 'user_abc' cannot create a wishlist item in user 'user_xyz' wishlist collection.
+     * @allow (get) User with UID 'user_abc' can get a wishlist item from their own wishlist collection.
+     * @deny (get) User with UID 'user_abc' cannot get a wishlist item from user 'user_xyz' wishlist collection.
+     * @allow (list) User with UID 'user_abc' can list wishlist items from their own wishlist collection.
+     * @deny (list) User with UID 'user_abc' cannot list wishlist items from user 'user_xyz' wishlist collection.
+     * @principle Enforces document ownership, only the user can read/write their wishlist items.
+     */
+    match /users/{userId}/wishlist/{wishlistId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
 
-      match /ious/{iouId} {
-        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
-      }
+    /**
+     * @description Rules for the /users/{userId}/ious/{iouId} collection.
+     * @path /users/{userId}/ious/{iouId}
+     * @allow (create) User with UID 'user_abc' can create an IOU in their own IOUs collection.
+     * @deny (create) User with UID 'user_abc' cannot create an IOU in user 'user_xyz' IOUs collection.
+     * @allow (get) User with UID 'user_abc' can get an IOU from their own IOUs collection.
+     * @deny (get) User with UID 'user_abc' cannot get an IOU from user 'user_xyz' IOUs collection.
+     * @allow (list) User with UID 'user_abc' can list IOUs from their own IOUs collection.
+     * @deny (list) User with UID 'user_abc' cannot list IOUs from user 'user_xyz' IOUs collection.
+     * @principle Enforces document ownership, only the user can read/write their IOUs.
+     */
+    match /users/{userId}/ious/{iouId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }

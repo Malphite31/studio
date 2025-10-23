@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ExpenseForm } from './expense-form';
 import { BudgetForm } from './budget-form';
 import { ThemeSwitcher } from './theme-switcher';
-import type { Expense, BudgetGoal, Category, Iou, UserProfile } from '@/lib/types';
+import type { Expense, BudgetGoal, Category, Iou, UserProfile, Income } from '@/lib/types';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useDoc } from '@/firebase/firestore/use-doc';
@@ -31,6 +31,7 @@ import { useMemoFirebase } from '@/firebase/provider';
 interface DashboardHeaderProps {
   addExpense: (expense: Omit<Expense, 'id' | 'date' | 'userId'>) => void;
   addIou: (iou: Omit<Iou, 'id' | 'paid' | 'userId'>) => void;
+  addIncome: (income: Omit<Income, 'id' | 'date' | 'userId'>) => void;
   budgetGoals: BudgetGoal[];
   updateBudgets: (updatedGoals: Record<Category, number>) => void;
 }
@@ -38,6 +39,7 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({
   addExpense,
   addIou,
+  addIncome,
   budgetGoals,
   updateBudgets,
 }: DashboardHeaderProps) {
@@ -62,7 +64,7 @@ export default function DashboardHeader({
             <div className='hidden sm:flex items-center gap-2'>
                 <ThemeSwitcher />
                 <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-                <ExpenseForm addExpense={addExpense} addIou={addIou} />
+                <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} />
             </div>
             
             <Sheet>
@@ -80,7 +82,7 @@ export default function DashboardHeader({
                     <nav className="grid gap-4 text-lg font-medium">
                         <ThemeSwitcher />
                         <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-                        <ExpenseForm addExpense={addExpense} addIou={addIou} />
+                        <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} />
                     </nav>
                 </SheetContent>
             </Sheet>

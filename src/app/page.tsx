@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Expense as ExpenseType, BudgetGoal, Category, WishlistItem as WishlistItemType, Iou as IouType } from '@/lib/types';
+import type { Expense as ExpenseType, BudgetGoal, Category, WishlistItem as WishlistItemType, Iou as IouType, Income as IncomeType } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard-header';
 import RecentExpenses from '@/components/recent-expenses';
 import SpendingBreakdown from '@/components/spending-breakdown';
@@ -10,6 +10,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Wishlist from '@/components/wishlist';
 import DebtTracker from '@/components/debt-tracker';
+import IncomeTracker from '@/components/income-tracker';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -45,6 +46,12 @@ export default function DashboardPage() {
   );
   const { data: ious, isLoading: iousLoading } = useCollection<IouType>(iousQuery);
 
+  const incomeQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'income') : null,
+    [user, firestore]
+  );
+  const { data: income, isLoading: incomeLoading } = useCollection<IncomeType>(incomeQuery);
+
 
   const budgetGoals: BudgetGoal[] = useMemo(() => {
     return budgetGoalsData?.map(goal => ({
@@ -73,6 +80,16 @@ export default function DashboardPage() {
       userId: user.uid,
     };
     addDocumentNonBlocking(iousQuery, newIou);
+  };
+
+  const addIncome = (income: Omit<IncomeType, 'id' | 'date' | 'userId'>) => {
+    if (!user || !incomeQuery) return;
+    const newIncome = {
+      ...income,
+      date: serverTimestamp(),
+      userId: user.uid,
+    };
+    addDocumentNonBlocking(incomeQuery, newIncome);
   };
 
   const updateBudgets = (updatedGoals: Record<Category, number>) => {
@@ -119,13 +136,15 @@ export default function DashboardPage() {
       <DashboardHeader
         addExpense={addExpense}
         addIou={addIou}
+        addIncome={addIncome}
         budgetGoals={budgetGoals}
         updateBudgets={updateBudgets}
       />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <Tabs defaultValue="dashboard">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="income">Income</TabsTrigger>
             <TabsTrigger value="wishlist">Wish List</TabsTrigger>
             <TabsTrigger value="debts">Debts</TabsTrigger>
           </TabsList>
@@ -135,6 +154,9 @@ export default function DashboardPage() {
                 <BudgetStatus expenses={expenses || []} budgetGoals={budgetGoals || []} />
                 <RecentExpenses expenses={expenses || []} />
              </div>
+          </TabsContent>
+          <TabsContent value="income">
+            <IncomeTracker income={income || []} />
           </TabsContent>
           <TabsContent value="wishlist">
             <Wishlist 

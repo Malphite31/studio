@@ -45,3 +45,11 @@ export interface UserProfile {
     email: string;
     profilePicture?: string;
 }
+
+export interface Income {
+  id: string;
+  name: string;
+  amount: number;
+  date: Date | Timestamp;
+  userId: string;
+}

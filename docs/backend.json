@@ -219,6 +219,42 @@
         "paid",
         "userId"
       ]
+    },
+    "Income": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Income",
+      "type": "object",
+      "description": "Represents a single income entry.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Income entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile."
+        },
+        "name": {
+          "type": "string",
+          "description": "The source or description of the income."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of income received."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date the income was received.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "amount",
+        "date"
+      ]
     }
   },
   "auth": {
@@ -251,6 +287,10 @@
     "/users/{userId}/ious/{iouId}": {
       "schema": "Iou",
       "description": "Stores IOUs for a specific user."
+    },
+    "/users/{userId}/income/{incomeId}": {
+      "schema": "Income",
+      "description": "Stores income data for a specific user."
     }
   }
 }
