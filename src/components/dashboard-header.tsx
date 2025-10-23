@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleUser, Coins, Menu, Settings, LogOut, User as UserIcon } from 'lucide-react';
+import { CircleUser, Coins, Menu, Settings, LogOut, User as UserIcon, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import {
   Sheet,
@@ -27,8 +27,10 @@ import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useMemoFirebase } from '@/firebase/provider';
+import { cn } from '@/lib/utils';
 
 interface DashboardHeaderProps {
+  balance: number;
   addExpense: (expense: Omit<Expense, 'id' | 'date' | 'userId'>) => void;
   addIou: (iou: Omit<Iou, 'id' | 'paid' | 'userId'>) => void;
   addIncome: (income: Omit<Income, 'id' | 'date' | 'userId'>) => void;
@@ -37,6 +39,7 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({
+  balance,
   addExpense,
   addIou,
   addIncome,
@@ -60,7 +63,22 @@ export default function DashboardHeader({
           <Coins className="h-6 w-6 text-primary" />
           <span className="">SpendWise</span>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+
+        <div className="flex items-center gap-4 ml-auto">
+            <div className="hidden sm:flex items-center gap-2 border-r pr-4">
+                <Wallet className="h-5 w-5 text-muted-foreground" />
+                <div className="flex flex-col text-right">
+                    <span className="text-xs text-muted-foreground">Balance</span>
+                    <span className={cn(
+                        "font-semibold text-sm",
+                        balance > 0 && "text-green-600",
+                        balance < 0 && "text-destructive",
+                    )}>
+                        ₱{balance.toFixed(2)}
+                    </span>
+                </div>
+            </div>
+        
             <div className='hidden sm:flex items-center gap-2'>
                 <ThemeSwitcher />
                 <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />

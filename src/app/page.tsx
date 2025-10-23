@@ -52,6 +52,18 @@ export default function DashboardPage() {
   );
   const { data: income, isLoading: incomeLoading } = useCollection<IncomeType>(incomeQuery);
 
+  const totalIncome = useMemo(() => 
+    income?.reduce((sum, item) => sum + item.amount, 0) || 0, 
+    [income]
+  );
+
+  const totalExpenses = useMemo(() => 
+    expenses?.reduce((sum, item) => sum + item.amount, 0) || 0,
+    [expenses]
+  );
+
+  const balance = useMemo(() => totalIncome - totalExpenses, [totalIncome, totalExpenses]);
+
 
   const budgetGoals: BudgetGoal[] = useMemo(() => {
     return budgetGoalsData?.map(goal => ({
@@ -134,6 +146,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <DashboardHeader
+        balance={balance}
         addExpense={addExpense}
         addIou={addIou}
         addIncome={addIncome}
