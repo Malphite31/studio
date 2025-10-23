@@ -21,3 +21,14 @@ export interface WishlistItem {
   targetAmount: number;
   savedAmount: number;
 }
+
+export type IouType = 'Borrow' | 'Lent';
+
+export interface Iou {
+  id: string;
+  name: string;
+  amount: number;
+  type: IouType;
+  dueDate: Date;
+  paid: boolean;
+}

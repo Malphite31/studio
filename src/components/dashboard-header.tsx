@@ -20,16 +20,18 @@ import {
 import { ExpenseForm } from './expense-form';
 import { BudgetForm } from './budget-form';
 import { ThemeSwitcher } from './theme-switcher';
-import type { Expense, BudgetGoal, Category } from '@/lib/types';
+import type { Expense, BudgetGoal, Category, Iou } from '@/lib/types';
 
 interface DashboardHeaderProps {
   addExpense: (expense: Omit<Expense, 'id' | 'date'>) => void;
+  addIou: (iou: Omit<Iou, 'id' | 'paid'>) => void;
   budgetGoals: BudgetGoal[];
   updateBudgets: (updatedGoals: Record<Category, number>) => void;
 }
 
 export default function DashboardHeader({
   addExpense,
+  addIou,
   budgetGoals,
   updateBudgets,
 }: DashboardHeaderProps) {
@@ -43,7 +45,7 @@ export default function DashboardHeader({
             <div className='hidden sm:flex items-center gap-2'>
                 <ThemeSwitcher />
                 <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-                <ExpenseForm addExpense={addExpense} />
+                <ExpenseForm addExpense={addExpense} addIou={addIou} />
             </div>
             
             <Sheet>
@@ -66,7 +68,7 @@ export default function DashboardHeader({
                         <div className="flex flex-col gap-4">
                             <ThemeSwitcher />
                             <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-                            <ExpenseForm addExpense={addExpense} />
+                            <ExpenseForm addExpense={addExpense} addIou={addIou} />
                         </div>
 
                     </nav>

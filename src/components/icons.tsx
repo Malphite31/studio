@@ -19,7 +19,5 @@ export const CategoryIcons: Record<Category, LucideIcon> = {
   Housing: Home,
   Utilities: Zap,
   Bills: Receipt,
-  Borrow: HandCoins,
-  Lent: ArrowRightLeft,
   Other: Ellipsis,
 };

@@ -1,4 +1,4 @@
-import type { Expense, BudgetGoal, Category, WishlistItem } from './types';
+import type { Expense, BudgetGoal, Category, WishlistItem, Iou } from './types';
 
 export const CATEGORIES = [
   'Groceries',
@@ -7,8 +7,6 @@ export const CATEGORIES = [
   'Housing',
   'Utilities',
   'Bills',
-  'Borrow',
-  'Lent',
   'Other',
 ] as const;
 
@@ -18,9 +16,7 @@ export const CATEGORY_COLORS: Record<Category, string> = {
     Entertainment: 'hsl(var(--chart-3))',
     Housing: 'hsl(var(--chart-4))',
     Utilities: 'hsl(var(--chart-5))',
-    Bills: 'hsl(var(--chart-1))', // Reusing a color for now
-    Borrow: 'hsl(var(--chart-2))',
-    Lent: 'hsl(var(--chart-3))',
+    Bills: 'hsl(var(--chart-1))',
     Other: 'hsl(var(--muted))',
 };
 
@@ -76,8 +72,6 @@ export const initialBudgetGoals: BudgetGoal[] = [
   { category: 'Housing', amount: 1500 },
   { category: 'Utilities', amount: 150 },
   { category: 'Bills', amount: 250 },
-  { category: 'Borrow', amount: 0 },
-  { category: 'Lent', amount: 0 },
   { category: 'Other', amount: 100 },
 ];
 
@@ -85,4 +79,10 @@ export const initialWishlistItems: WishlistItem[] = [
   { id: 'wish-1', name: 'New Laptop', targetAmount: 1200, savedAmount: 300 },
   { id: 'wish-2', name: 'Vacation to Hawaii', targetAmount: 2500, savedAmount: 1500 },
   { id: 'wish-3', name: 'Noise-Cancelling Headphones', targetAmount: 350, savedAmount: 350 },
+];
+
+export const initialIous: Iou[] = [
+    { id: 'iou-1', name: 'Loan from Jane', type: 'Borrow', amount: 100, dueDate: new Date(new Date().setDate(new Date().getDate() + 14)), paid: false },
+    { id: 'iou-2', name: 'Lunch for John', type: 'Lent', amount: 25, dueDate: new Date(new Date().setDate(new Date().getDate() + 7)), paid: false },
+    { id: 'iou-3', name: 'Concert ticket', type: 'Borrow', amount: 75, dueDate: new Date(new Date().setDate(new Date().getDate() - 5)), paid: true },
 ];
