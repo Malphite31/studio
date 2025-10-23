@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Expense as ExpenseType, BudgetGoal, Category, WishlistItem as WishlistItemType, Iou as IouType, Income as IncomeType } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard-header';
 import RecentExpenses from '@/components/recent-expenses';
@@ -15,11 +15,23 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Login from '@/components/login';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { WelcomeDialog } from '@/components/welcome-dialog';
 
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    if (user && user.metadata.creationTime === user.metadata.lastSignInTime) {
+      // It's the user's first sign-in session
+      const timer = setTimeout(() => {
+        setShowWelcome(true);
+      }, 1000); // Delay slightly to not be too abrupt
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
 
   const expensesQuery = useMemoFirebase(() => 
     user ? collection(firestore, 'users', user.uid, 'expenses') : null, 
@@ -150,60 +162,63 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <DashboardHeader
-        balance={balance}
-        addExpense={addExpense}
-        addIou={addIou}
-        addIncome={addIncome}
-        budgetGoals={budgetGoals}
-        updateBudgets={updateBudgets}
-      />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
-            <div className="lg:col-span-2 grid gap-4 md:gap-8">
-              <SpendingBreakdown expenses={expenses || []} />
-              <BudgetStatus expenses={expenses || []} budgetGoals={budgetGoals || []} />
-              <RecentExpenses expenses={expenses || []} />
-            </div>
+    <>
+      <WelcomeDialog open={showWelcome} onOpenChange={setShowWelcome} />
+      <div className="flex min-h-screen w-full flex-col bg-background">
+        <DashboardHeader
+          balance={balance}
+          addExpense={addExpense}
+          addIou={addIou}
+          addIncome={addIncome}
+          budgetGoals={budgetGoals}
+          updateBudgets={updateBudgets}
+        />
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
+              <div className="lg:col-span-2 grid gap-4 md:gap-8">
+                <SpendingBreakdown expenses={expenses || []} />
+                <BudgetStatus expenses={expenses || []} budgetGoals={budgetGoals || []} />
+                <RecentExpenses expenses={expenses || []} />
+              </div>
 
-            <div className="grid gap-4 md:gap-8 lg:col-start-3">
-               <Card>
+              <div className="grid gap-4 md:gap-8 lg:col-start-3">
+                 <Card>
+                    <CardHeader>
+                      <CardTitle>Income</CardTitle>
+                      <CardDescription>Your recent income sources.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <IncomeTracker income={income || []} />
+                    </CardContent>
+                </Card>
+
+                <Card>
                   <CardHeader>
-                    <CardTitle>Income</CardTitle>
-                    <CardDescription>Your recent income sources.</CardDescription>
+                    <CardTitle>Wish List</CardTitle>
+                    <CardDescription>Your savings goals.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <IncomeTracker income={income || []} />
+                    <Wishlist
+                      items={wishlistItems || []}
+                      addWishlistItem={addWishlistItem}
+                      contributeToWishlist={contributeToWishlist}
+                    />
                   </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Wish List</CardTitle>
-                  <CardDescription>Your savings goals.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Wishlist
-                    items={wishlistItems || []}
-                    addWishlistItem={addWishlistItem}
-                    contributeToWishlist={contributeToWishlist}
-                  />
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Debts & Loans</CardTitle>
-                  <CardDescription>Money you owe and money owed to you.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <DebtTracker ious={ious || []} markAsPaid={markIouAsPaid} />
-                </CardContent>
-              </Card>
-            </div>
-        </div>
-      </main>
-    </div>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Debts & Loans</CardTitle>
+                    <CardDescription>Money you owe and money owed to you.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <DebtTracker ious={ious || []} markAsPaid={markIouAsPaid} />
+                  </CardContent>
+                </Card>
+              </div>
+          </div>
+        </main>
+      </div>
+    </>
   );
 }

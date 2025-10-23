@@ -3,7 +3,7 @@ import { useState, useMemo, useRef } from 'react';
 import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, serverTimestamp } from 'firebase/firestore';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { ArrowLeft, UploadCloud } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 
 const profileSchema = z.object({
@@ -139,6 +140,19 @@ export default function ProfilePage() {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
+  
+  const handlePasswordReset = async () => {
+    if (!user?.email) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No email address found for this user.' });
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, user.email);
+      toast({ title: 'Password Reset Email Sent', description: 'Check your inbox for a link to reset your password.' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+  };
 
   if (isProfileLoading) return <div>Loading profile...</div>
 
@@ -217,6 +231,17 @@ export default function ProfilePage() {
                 <Button type="submit">Save Changes</Button>
               </form>
             </Form>
+
+            <Separator />
+
+            <div>
+                <h3 className="text-lg font-medium">Security</h3>
+                <p className="text-sm text-muted-foreground">Manage your password.</p>
+                <Button variant="outline" className="mt-4" onClick={handlePasswordReset}>
+                    Send Password Reset Email
+                </Button>
+            </div>
+
           </CardContent>
         </Card>
       </div>
