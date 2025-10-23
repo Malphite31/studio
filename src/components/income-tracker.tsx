@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface IncomeTrackerProps {
   income: Income[];
@@ -35,18 +36,13 @@ export default function IncomeTracker({ income }: IncomeTrackerProps) {
   const totalIncome = sortedIncome.reduce((acc, item) => acc + item.amount, 0);
 
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Income History</CardTitle>
-        <CardDescription>A record of all your income sources.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <>
+      <ScrollArea className="h-64">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Source</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className='p-2'>Source</TableHead>
+              <TableHead className="text-right p-2">Amount</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -55,16 +51,13 @@ export default function IncomeTracker({ income }: IncomeTrackerProps) {
                 const incomeDate = item.date instanceof Timestamp ? item.date.toDate() : item.date;
                 return (
                   <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center justify-center w-8 h-8 bg-secondary rounded-full">
-                          <Landmark className="h-4 w-4 text-muted-foreground" />
-                        </span>
-                        <span className="font-medium">{item.name}</span>
-                      </div>
+                    <TableCell className='p-2'>
+                        <div className="font-medium text-sm">{item.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                            {format(incomeDate, 'MMM d, yyyy')}
+                        </div>
                     </TableCell>
-                    <TableCell>{format(incomeDate, 'MMM d, yyyy')}</TableCell>
-                    <TableCell className="text-right font-medium text-green-600">
+                    <TableCell className="text-right font-medium text-green-600 p-2">
                       +₱{item.amount.toFixed(2)}
                     </TableCell>
                   </TableRow>
@@ -72,20 +65,19 @@ export default function IncomeTracker({ income }: IncomeTrackerProps) {
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-8">
+                <TableCell colSpan={2} className="text-center py-8 text-sm">
                   No income recorded yet.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </CardContent>
-      <CardFooter className="flex justify-end font-bold text-lg">
+      </ScrollArea>
+      <div className="flex justify-end font-bold text-md mt-4 pr-2">
         <div className="flex items-center gap-2">
-            <TrendingUp />
-            <span>Total Income: ₱{totalIncome.toFixed(2)}</span>
+            <span>Total: ₱{totalIncome.toFixed(2)}</span>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </>
   );
 }

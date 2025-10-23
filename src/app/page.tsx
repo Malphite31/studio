@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { Expense as ExpenseType, BudgetGoal, Category, WishlistItem as WishlistItemType, Iou as IouType, Income as IncomeType } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard-header';
 import RecentExpenses from '@/components/recent-expenses';
 import SpendingBreakdown from '@/components/spending-breakdown';
 import BudgetStatus from '@/components/budget-status';
-import { Toaster } from '@/components/ui/toaster';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Wishlist from '@/components/wishlist';
 import DebtTracker from '@/components/debt-tracker';
 import IncomeTracker from '@/components/income-tracker';
@@ -16,6 +14,7 @@ import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Login from '@/components/login';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 
 export default function DashboardPage() {
@@ -154,36 +153,50 @@ export default function DashboardPage() {
         updateBudgets={updateBudgets}
       />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <Tabs defaultValue="dashboard">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="income">Income</TabsTrigger>
-            <TabsTrigger value="wishlist">Wish List</TabsTrigger>
-            <TabsTrigger value="debts">Debts</TabsTrigger>
-          </TabsList>
-          <TabsContent value="dashboard">
-             <div className="grid gap-4 md:gap-8 mt-4">
-                <SpendingBreakdown expenses={expenses || []} />
-                <BudgetStatus expenses={expenses || []} budgetGoals={budgetGoals || []} />
-                <RecentExpenses expenses={expenses || []} />
-             </div>
-          </TabsContent>
-          <TabsContent value="income">
-            <IncomeTracker income={income || []} />
-          </TabsContent>
-          <TabsContent value="wishlist">
-            <Wishlist 
-              items={wishlistItems || []}
-              addWishlistItem={addWishlistItem}
-              contributeToWishlist={contributeToWishlist}
-            />
-          </TabsContent>
-          <TabsContent value="debts">
-            <DebtTracker ious={ious || []} markAsPaid={markIouAsPaid} />
-          </TabsContent>
-        </Tabs>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
+            <div className="lg:col-span-2 grid gap-4 md:gap-8">
+              <SpendingBreakdown expenses={expenses || []} />
+              <BudgetStatus expenses={expenses || []} budgetGoals={budgetGoals || []} />
+              <RecentExpenses expenses={expenses || []} />
+            </div>
+
+            <div className="grid gap-4 md:gap-8 lg:col-start-3">
+               <Card>
+                  <CardHeader>
+                    <CardTitle>Income</CardTitle>
+                    <CardDescription>Your recent income sources.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <IncomeTracker income={income || []} />
+                  </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Wish List</CardTitle>
+                  <CardDescription>Your savings goals.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Wishlist
+                    items={wishlistItems || []}
+                    addWishlistItem={addWishlistItem}
+                    contributeToWishlist={contributeToWishlist}
+                  />
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Debts & Loans</CardTitle>
+                  <CardDescription>Money you owe and money owed to you.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DebtTracker ious={ious || []} markAsPaid={markIouAsPaid} />
+                </CardContent>
+              </Card>
+            </div>
+        </div>
       </main>
-      <Toaster />
     </div>
   );
 }

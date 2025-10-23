@@ -12,13 +12,17 @@ interface WishlistProps {
 
 export default function Wishlist({ items, addWishlistItem, contributeToWishlist }: WishlistProps) {
   return (
-    <div className="grid gap-4 md:gap-8 mt-4">
+    <div className="grid gap-4 md:gap-8">
       <WishlistForm addWishlistItem={addWishlistItem} />
-      <div className="space-y-4">
-        {items.map((item) => (
-          <WishlistItem key={item.id} item={item} contributeToWishlist={contributeToWishlist} />
-        ))}
-      </div>
+       {items.length > 0 ? (
+        <div className="space-y-4">
+          {items.map((item) => (
+            <WishlistItem key={item.id} item={item} contributeToWishlist={contributeToWishlist} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-muted-foreground text-center text-sm py-4">Your wish list is empty.</p>
+      )}
     </div>
   );
 }
