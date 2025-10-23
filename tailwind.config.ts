@@ -18,6 +18,7 @@ export default {
     extend: {
       backgroundPosition: {
         'right-center': 'right center',
+        'left-center': 'left center'
       },
       fontFamily: {
         body: ['PT Sans', 'sans-serif'],

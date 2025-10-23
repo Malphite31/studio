@@ -5,6 +5,8 @@ import Link from 'next/link';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -29,7 +31,8 @@ import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { cn } from '@/lib/utils';
-import { CASH_ON_HAND_WALLET } from '@/lib/data';
+import { Separator } from './ui/separator';
+
 
 interface DashboardHeaderProps {
   balance: number;
@@ -66,7 +69,7 @@ export default function DashboardHeader({
   };
 
   return (
-    <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-white/10 bg-background/50 backdrop-blur-lg px-4 md:px-6 z-30">
+    <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 z-30">
         <div className="flex items-center gap-4 font-semibold">
           <Coins className="h-6 w-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full p-0.5" />
           <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>SpendWise</span>
@@ -79,13 +82,13 @@ export default function DashboardHeader({
         </div>
 
         <div className="flex items-center gap-4 ml-auto">
-            <div className="hidden sm:flex items-center gap-2 border-r border-white/10 pr-4">
+            <div className="hidden sm:flex items-center gap-2 border-r border-border/40 pr-4">
                 <Wallet className="h-5 w-5 text-muted-foreground" />
                 <div className="flex flex-col text-right">
                     <span className="text-xs text-muted-foreground">Total Balance</span>
                     <span className={cn(
                         "font-semibold text-sm",
-                        balance > 0 && "text-green-400",
+                        balance > 0 && "text-green-500",
                         balance < 0 && "text-red-500",
                     )}>
                         {formatCurrency(balance)}
@@ -108,16 +111,36 @@ export default function DashboardHeader({
                 </SheetTrigger>
                 <SheetContent side="left">
                     <SheetHeader>
-                        <SheetTitle>Menu</SheetTitle>
+                         <SheetTitle className="flex items-center gap-2 text-lg font-semibold mb-2">
+                            <Coins className="h-6 w-6 text-primary" />
+                            <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>SpendWise</span>
+                        </SheetTitle>
+                        <SheetDescription>
+                            Your personal finance dashboard.
+                        </SheetDescription>
                     </SheetHeader>
-                    <div className="flex items-center gap-2 text-lg font-semibold mb-6">
-                        <Coins className="h-6 w-6 text-primary" />
-                        <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>SpendWise</span>
+                    
+                    <div className="flex flex-col gap-4 py-8">
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                          <div className='flex flex-col'>
+                            <span className="text-sm text-muted-foreground">Total Balance</span>
+                              <span className={cn(
+                                "font-semibold text-lg",
+                                balance > 0 && "text-green-500",
+                                balance < 0 && "text-red-500",
+                            )}>
+                                {formatCurrency(balance)}
+                            </span>
+                          </div>
+                          <Wallet className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} triggerType="button" wallets={wallets} />
+                      <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
                     </div>
-                    <nav className="grid gap-4 text-lg font-medium">
+
+                    <SheetFooter className="absolute bottom-6 right-6 left-6">
                         <ThemeSwitcher />
-                        <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-                    </nav>
+                    </SheetFooter>
                 </SheetContent>
             </Sheet>
 
