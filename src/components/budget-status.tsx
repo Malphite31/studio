@@ -77,12 +77,8 @@ export default function BudgetStatus({
                   value={status.progress}
                   className={cn("h-2", status.overBudget && "bg-destructive/20")}
                   indicatorClassName={cn(
-                    "bg-[--color-indicator]",
                     status.overBudget && "bg-destructive"
                   )}
-                  style={{
-                    '--color-indicator': CATEGORY_COLORS[status.category],
-                  } as React.CSSProperties}
                 />
               </div>
             ))
