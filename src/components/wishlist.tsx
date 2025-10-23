@@ -6,8 +6,8 @@ import WishlistItem from './wishlist-item';
 
 interface WishlistProps {
   items: WishlistItemType[];
-  addWishlistItem: (item: Omit<WishlistItemType, 'id' | 'savedAmount' | 'userId'>) => void;
-  contributeToWishlist: (item: WishlistItemType, amount: number, walletId: string) => void;
+  addWishlistItem: (item: Omit<WishlistItemType, 'id' | 'savedAmount' | 'userId' | 'purchased'>) => void;
+  contributeToWishlist: (item: WishlistItemType, amount: number, walletId: string) => Promise<{ goalReached: boolean }>;
   purchaseWishlistItem: (item: WishlistItemType) => void;
   wallets: EWallet[];
 }

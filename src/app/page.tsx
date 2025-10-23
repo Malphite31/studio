@@ -202,39 +202,45 @@ export default function DashboardPage() {
     addDocumentNonBlocking(collection(firestore, 'users', user.uid, 'wishlist'), newWishlistItem);
   };
 
-  const contributeToWishlist = (item: WishlistItemType, amount: number, walletId: string) => {
-    if (!user) return;
-    const { id, savedAmount, targetAmount, name } = item;
-    
-    const newSavedAmount = Math.min(savedAmount + amount, targetAmount);
+  const contributeToWishlist = (item: WishlistItemType, amount: number, walletId: string): Promise<{ goalReached: boolean }> => {
+    return new Promise((resolve, reject) => {
+        if (!user) return reject(new Error("User not found"));
+        
+        const { id, savedAmount, targetAmount, name } = item;
+        const newSavedAmount = Math.min(savedAmount + amount, targetAmount);
+        const goalReached = newSavedAmount >= targetAmount;
 
-    runTransaction(firestore, async (transaction) => {
-        const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', id);
-        const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
-        
-        const paymentMethod = allWallets.find(w => w.id === walletId)?.name;
+        runTransaction(firestore, async (transaction) => {
+            const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', id);
+            const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
+            
+            const paymentMethod = allWallets.find(w => w.id === walletId)?.name;
 
-        const newExpenseData: Omit<ExpenseType, 'id' | 'userId' | 'date'> = {
-            name: `Contribution to: ${name}`,
-            amount: amount,
-            category: 'Other' as Category,
-            walletId: walletId,
-            paymentMethod: paymentMethod,
-        };
-        
-        if (walletId !== CASH_ON_HAND_WALLET.id) {
-            const walletRef = doc(firestore, 'users', user.uid, 'wallets', walletId);
-            const walletDoc = await transaction.get(walletRef);
-            if (!walletDoc.exists()) throw new Error("Wallet not found");
-            const newWalletBalance = walletDoc.data().balance - amount;
-            transaction.update(walletRef, { balance: newWalletBalance });
-        }
-        
-        transaction.set(newExpenseRef, { ...newExpenseData, date: serverTimestamp(), userId: user.uid });
-        transaction.set(wishlistItemRef, { savedAmount: newSavedAmount }, { merge: true });
-        
-    }).catch(error => {
-        toast({variant: 'destructive', title: 'Contribution failed', description: error.message});
+            const newExpenseData: Omit<ExpenseType, 'id' | 'userId' | 'date'> = {
+                name: `Contribution to: ${name}`,
+                amount: amount,
+                category: 'Other' as Category,
+                walletId: walletId,
+                paymentMethod: paymentMethod,
+            };
+            
+            if (walletId !== CASH_ON_HAND_WALLET.id) {
+                const walletRef = doc(firestore, 'users', user.uid, 'wallets', walletId);
+                const walletDoc = await transaction.get(walletRef);
+                if (!walletDoc.exists()) throw new Error("Wallet not found");
+                const newWalletBalance = walletDoc.data().balance - amount;
+                transaction.update(walletRef, { balance: newWalletBalance });
+            }
+            
+            transaction.set(newExpenseRef, { ...newExpenseData, date: serverTimestamp(), userId: user.uid });
+            transaction.set(wishlistItemRef, { savedAmount: newSavedAmount }, { merge: true });
+            
+        }).then(() => {
+            resolve({ goalReached });
+        }).catch(error => {
+            toast({variant: 'destructive', title: 'Contribution failed', description: error.message});
+            reject(error);
+        });
     });
   };
   

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
+import { ConfirmationDialog } from './confirmation-dialog';
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Must be positive.' }),
@@ -33,7 +35,7 @@ const formSchema = z.object({
 
 interface WishlistItemProps {
   item: WishlistItemType;
-  contributeToWishlist: (item: WishlistItemType, amount: number, walletId: string) => void;
+  contributeToWishlist: (item: WishlistItemType, amount: number, walletId: string) => Promise<{ goalReached: boolean }>;
   purchaseWishlistItem: (item: WishlistItemType) => void;
   wallets: EWallet[];
 }
@@ -44,6 +46,7 @@ const formatCurrency = (amount: number) =>
 
 export default function WishlistItem({ item, contributeToWishlist, purchaseWishlistItem, wallets }: WishlistItemProps) {
   const { toast } = useToast();
+  const [isGoalReachedConfettiOpen, setGoalReachedConfettiOpen] = useState(false);
   
   const isGoalReached = item.savedAmount >= item.targetAmount;
   const progress = (item.savedAmount / item.targetAmount) * 100;
@@ -56,7 +59,7 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     const amountToContribute = values.amount;
     const selectedWallet = wallets.find(w => w.id === values.walletId);
     const availableBalance = selectedWallet?.balance ?? 0;
@@ -70,11 +73,17 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
         return;
     }
     
-    contributeToWishlist(item, amountToContribute, values.walletId);
-    toast({
-        title: "Contribution added!",
-        description: `You added ${formatCurrency(amountToContribute)} to ${item.name}.`,
-    });
+    const { goalReached } = await contributeToWishlist(item, amountToContribute, values.walletId);
+
+    if(goalReached) {
+        setGoalReachedConfettiOpen(true);
+    } else {
+        toast({
+            title: "Contribution added!",
+            description: `You added ${formatCurrency(amountToContribute)} to ${item.name}.`,
+        });
+    }
+
     form.reset({ amount: 10, walletId: form.getValues('walletId')});
   }
 
@@ -87,88 +96,102 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
   }
 
   return (
-    <AlertDialog>
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Gift className="h-5 w-5" />
-                {item.name}
-              </CardTitle>
-              <CardDescription>
-                Saved {formatCurrency(item.savedAmount)} of {formatCurrency(item.targetAmount)}
-              </CardDescription>
+    <>
+      <AlertDialog>
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="h-5 w-5" />
+                  {item.name}
+                </CardTitle>
+                <CardDescription>
+                  Saved {formatCurrency(item.savedAmount)} of {formatCurrency(item.targetAmount)}
+                </CardDescription>
+              </div>
+              {isGoalReached && <Sparkles className="h-6 w-6 text-yellow-400" />}
             </div>
-            {isGoalReached && <Sparkles className="h-6 w-6 text-yellow-400" />}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Progress value={progress} className="h-3 mb-4" />
-          {isGoalReached ? (
-             <AlertDialogTrigger asChild>
-                <Button className="w-full">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Buy Now
-                </Button>
-            </AlertDialogTrigger>
-          ) : (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className='flex items-start gap-2'>
-                    <FormField
-                    control={form.control}
-                    name="amount"
-                    render={({ field }) => (
-                        <FormItem className="flex-grow">
-                        <FormControl>
-                            <Input type="number" step="1" placeholder="Amount" {...field} />
-                        </FormControl>
-                        <FormMessage className="text-xs" />
-                        </FormItem>
-                    )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="walletId"
-                        render={({ field }) => (
-                            <FormItem className='flex-grow'>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Wallet" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                    {wallets.map((wallet) => (
-                                        <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>
-                                    ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                </div>
-                <Button type="submit" className="w-full">Contribute</Button>
-              </form>
-            </Form>
-          )}
-        </CardContent>
-      </Card>
-      
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will mark "{item.name}" as purchased and record a final expense if there's a remaining balance. This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Decide Later</AlertDialogCancel>
-          <AlertDialogAction onClick={handleBuy}>Yes, Buy It Now</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </CardHeader>
+          <CardContent>
+            <Progress value={progress} className="h-3 mb-4" />
+            {isGoalReached ? (
+              <AlertDialogTrigger asChild>
+                  <Button className="w-full">
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Buy Now
+                  </Button>
+              </AlertDialogTrigger>
+            ) : (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <div className='flex items-start gap-2'>
+                      <FormField
+                      control={form.control}
+                      name="amount"
+                      render={({ field }) => (
+                          <FormItem className="flex-grow">
+                          <FormControl>
+                              <Input type="number" step="1" placeholder="Amount" {...field} />
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                          </FormItem>
+                      )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="walletId"
+                          render={({ field }) => (
+                              <FormItem className='flex-grow'>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                      <FormControl>
+                                      <SelectTrigger>
+                                          <SelectValue placeholder="Wallet" />
+                                      </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                      {wallets.map((wallet) => (
+                                          <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>
+                                      ))}
+                                      </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                          />
+                  </div>
+                  <Button type="submit" className="w-full">Contribute</Button>
+                </form>
+              </Form>
+            )}
+          </CardContent>
+        </Card>
+        
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark "{item.name}" as purchased and record a final expense if there's a remaining balance. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Decide Later</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBuy}>Yes, Buy It Now</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <ConfirmationDialog
+        open={isGoalReachedConfettiOpen}
+        onOpenChange={setGoalReachedConfettiOpen}
+        title="Goal Reached!"
+        description={`Congratulations! You've saved up enough for your ${item.name}. Would you like to mark it as purchased now?`}
+        onConfirm={() => {
+            handleBuy();
+            setGoalReachedConfettiOpen(false);
+        }}
+        confirmText="Yes, Purchase!"
+        cancelText="Not Yet"
+      />
+    </>
   );
 }
