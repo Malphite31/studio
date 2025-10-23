@@ -52,7 +52,7 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
     const chartConfig: ChartConfig = {
       total: {
         label: 'Total',
-        color: 'hsl(var(--chart-1))',
+        color: 'hsl(var(--primary))',
       },
     };
 
@@ -81,9 +81,9 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
                <defs>
-                <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0.8}/>
                 </linearGradient>
               </defs>
               <CartesianGrid vertical={false} />
