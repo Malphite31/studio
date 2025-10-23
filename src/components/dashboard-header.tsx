@@ -23,12 +23,11 @@ import { ExpenseForm } from './expense-form';
 import { BudgetForm } from './budget-form';
 import { ThemeSwitcher } from './theme-switcher';
 import type { Expense, BudgetGoal, Category, Iou, UserProfile, Income, EWallet } from '@/lib/types';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
-import { useMemoFirebase } from '@/firebase/provider';
 import { cn } from '@/lib/utils';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
 
