@@ -132,11 +132,12 @@ export default function ProfilePage() {
     setUploadProgress(0);
 
     try {
-      const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop, "new-image.jpeg");
+      const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
+      const imageFile = new File([croppedImageBlob], `profile_${user.uid}.jpeg`, { type: 'image/jpeg' });
       
       const storage = getStorage();
       const storageRef = ref(storage, `profile-pictures/${user.uid}`);
-      const uploadTask = uploadBytesResumable(storageRef, croppedImageBlob);
+      const uploadTask = uploadBytesResumable(storageRef, imageFile);
 
       uploadTask.on('state_changed', 
         (snapshot) => {
@@ -489,7 +490,7 @@ export default function ProfilePage() {
   );
 }
 
-function getCroppedImg(image: HTMLImageElement, crop: Crop, fileName: string): Promise<Blob> {
+function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<Blob> {
   const canvas = document.createElement('canvas');
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
@@ -525,7 +526,7 @@ function getCroppedImg(image: HTMLImageElement, crop: Crop, fileName: string): P
         reject(new Error('Canvas is empty'));
         return;
       }
-      resolve(new Blob([blob], { type: 'image/jpeg' }));
+      resolve(blob);
     }, 'image/jpeg', 0.95);
   });
 }
