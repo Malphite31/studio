@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Gift, Sparkles } from 'lucide-react';
+import { Gift, Sparkles, ShoppingCart } from 'lucide-react';
 
 import type { WishlistItem as WishlistItemType, Expense } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -22,6 +22,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
 const formSchema = z.object({
@@ -36,16 +37,9 @@ interface WishlistItemProps {
 
 export default function WishlistItem({ item, contributeToWishlist, addExpense }: WishlistItemProps) {
   const { toast } = useToast();
-  const [showCongrats, setShowCongrats] = useState(false);
-
+  
   const isGoalReached = item.savedAmount >= item.targetAmount;
   const progress = (item.savedAmount / item.targetAmount) * 100;
-
-  useEffect(() => {
-    if (isGoalReached) {
-      setShowCongrats(true);
-    }
-  }, [isGoalReached]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,7 +56,6 @@ export default function WishlistItem({ item, contributeToWishlist, addExpense }:
   }
 
   const handleBuy = () => {
-    setShowCongrats(false);
     addExpense({
       name: `(Wishlist) ${item.name}`,
       amount: item.targetAmount,
@@ -75,7 +68,7 @@ export default function WishlistItem({ item, contributeToWishlist, addExpense }:
   }
 
   return (
-    <>
+    <AlertDialog>
       <Card>
         <CardHeader>
           <div className="flex justify-between items-start">
@@ -93,7 +86,14 @@ export default function WishlistItem({ item, contributeToWishlist, addExpense }:
         </CardHeader>
         <CardContent>
           <Progress value={progress} className="h-3 mb-4" />
-          {!isGoalReached && (
+          {isGoalReached ? (
+             <AlertDialogTrigger asChild>
+                <Button className="w-full">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Buy Now
+                </Button>
+            </AlertDialogTrigger>
+          ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-center gap-2">
                 <FormField
@@ -114,20 +114,19 @@ export default function WishlistItem({ item, contributeToWishlist, addExpense }:
           )}
         </CardContent>
       </Card>
-      <AlertDialog open={showCongrats} onOpenChange={setShowCongrats}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Congratulations! 🎉</AlertDialogTitle>
-            <AlertDialogDescription>
-              You've reached your savings goal for the {item.name}! Would you like to record the purchase now? This will add it as an expense and update your balance.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Decide Later</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBuy}>Yes, Buy It Now</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+      
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will record the purchase of your {item.name} for ₱{item.targetAmount.toFixed(2)}. This action will create a new expense and cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleBuy}>Yes, Buy It</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
