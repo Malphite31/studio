@@ -1,6 +1,6 @@
 'use client';
 
-import { format, isPast, differenceInDays } from 'date-fns';
+import { format, isPast, differenceInDays, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { HandCoins, ArrowRightLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { Iou } from '@/lib/types';
@@ -103,7 +103,7 @@ function IouTable({ ious, onPaid, type }: IouTableProps) {
                       </TableCell>
                       {type !== 'paid' && 
                         <TableCell className='p-2'>
-                          <span className="text-xs">{format(dueDate, 'MMM d')}</span>
+                          <span className="text-xs">{isValid(dueDate) ? format(dueDate, 'MMM d') : '...'}</span>
                         </TableCell>
                       }
                       {onPaid && type !== 'paid' && (

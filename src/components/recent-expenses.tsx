@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import type { Expense } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
 
@@ -29,6 +29,7 @@ export default function RecentExpenses({ expenses }: RecentExpensesProps) {
   const sortedExpenses = [...expenses].sort((a, b) => {
       const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
       const dateB = b.date instanceof Timestamp ? b.date.toDate() : b.date;
+      if (!isValid(dateA) || !isValid(dateB)) return 0;
       return dateB.getTime() - dateA.getTime();
   });
   
@@ -65,7 +66,7 @@ export default function RecentExpenses({ expenses }: RecentExpensesProps) {
                         <div>
                           <div className="font-medium">{expense.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            {format(expenseDate, 'MMM d, yyyy')}
+                            {isValid(expenseDate) ? format(expenseDate, 'MMM d, yyyy') : 'Processing...'}
                           </div>
                         </div>
                       </div>

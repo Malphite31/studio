@@ -1,6 +1,6 @@
 'use client';
 
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { Landmark, TrendingUp } from 'lucide-react';
 import type { Income } from '@/lib/types';
@@ -30,6 +30,7 @@ export default function IncomeTracker({ income }: IncomeTrackerProps) {
   const sortedIncome = [...income].sort((a, b) => {
     const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
     const dateB = b.date instanceof Timestamp ? b.date.toDate() : b.date;
+    if (!isValid(dateA) || !isValid(dateB)) return 0;
     return dateB.getTime() - dateA.getTime();
   });
 
@@ -54,7 +55,7 @@ export default function IncomeTracker({ income }: IncomeTrackerProps) {
                     <TableCell className='p-2'>
                         <div className="font-medium text-sm">{item.name}</div>
                         <div className="text-xs text-muted-foreground">
-                            {format(incomeDate, 'MMM d, yyyy')}
+                            {isValid(incomeDate) ? format(incomeDate, 'MMM d, yyyy') : 'Processing...'}
                         </div>
                     </TableCell>
                     <TableCell className="text-right font-medium text-green-600 p-2">
