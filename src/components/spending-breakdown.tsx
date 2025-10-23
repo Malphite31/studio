@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { format } from 'date-fns';
 
 import {
@@ -47,16 +47,14 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
     const chartData = CATEGORIES.map((category, index) => ({
       category,
       total: dataByCat[category] || 0,
-      fill: `var(--color-chart-${(index % 5) + 1})`,
     }));
 
-    const chartConfig: ChartConfig = chartData.reduce((acc, data) => {
-      acc[data.category] = {
-        label: data.category,
-        color: data.fill,
-      };
-      return acc;
-    }, {} as ChartConfig);
+    const chartConfig: ChartConfig = {
+      total: {
+        label: 'Total',
+        color: 'hsl(var(--chart-1))',
+      },
+    };
 
     return { chartData, chartConfig };
   }, [expenses]);
@@ -82,6 +80,12 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+               <defs>
+                <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+                </linearGradient>
+              </defs>
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="category"
@@ -98,16 +102,16 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
               <Tooltip
                 cursor={false}
                 content={<ChartTooltipContent 
-                    formatter={(value, name) => (
+                    formatter={(value, name, item) => (
                         <div className="flex flex-col">
-                            <span className="font-bold">{name}</span>
+                            <span className="font-bold">{item.payload.category}</span>
                             <span>{formatCurrency(value as number)}</span>
                         </div>
                     )}
                     hideLabel
                 />}
               />
-              <Bar dataKey="total" radius={8} />
+              <Bar dataKey="total" fill="url(#barGradient)" radius={8} />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>
