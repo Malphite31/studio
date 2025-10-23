@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Gift, Sparkles } from 'lucide-react';
 
-import type { WishlistItem as WishlistItemType } from '@/lib/types';
+import type { WishlistItem as WishlistItemType, Expense } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -31,9 +31,10 @@ const formSchema = z.object({
 interface WishlistItemProps {
   item: WishlistItemType;
   contributeToWishlist: (id: string, amount: number, currentSaved: number, targetAmount: number) => void;
+  addExpense: (expense: Omit<Expense, 'id' | 'date' | 'userId'>) => void;
 }
 
-export default function WishlistItem({ item, contributeToWishlist }: WishlistItemProps) {
+export default function WishlistItem({ item, contributeToWishlist, addExpense }: WishlistItemProps) {
   const { toast } = useToast();
   const [showCongrats, setShowCongrats] = useState(false);
 
@@ -62,9 +63,14 @@ export default function WishlistItem({ item, contributeToWishlist }: WishlistIte
 
   const handleBuy = () => {
     setShowCongrats(false);
+    addExpense({
+      name: `(Wishlist) ${item.name}`,
+      amount: item.targetAmount,
+      category: 'Other'
+    });
     toast({
-        title: "Purchase acknowledged!",
-        description: `Enjoy your new ${item.name}! (This is a demo). The item will remain for now.`,
+        title: "Item Purchased!",
+        description: `Enjoy your new ${item.name}! An expense has been recorded.`,
     })
   }
 
@@ -113,7 +119,7 @@ export default function WishlistItem({ item, contributeToWishlist }: WishlistIte
           <AlertDialogHeader>
             <AlertDialogTitle>Congratulations! 🎉</AlertDialogTitle>
             <AlertDialogDescription>
-              You've reached your savings goal for the {item.name}! Are you ready to make the purchase?
+              You've reached your savings goal for the {item.name}! Are you ready to make the purchase? This will add an expense for this item.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

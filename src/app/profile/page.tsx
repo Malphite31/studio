@@ -42,6 +42,7 @@ export default function ProfilePage() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<Crop>();
@@ -98,10 +99,10 @@ export default function ProfilePage() {
 
 
   const handleCrop = async () => {
-    if (!completedCrop || !imgSrc || !user) return;
+    if (!completedCrop || !imgRef.current || !user) return;
 
     setIsUploading(true);
-    const croppedImage = await getCroppedImg(imgSrc, completedCrop, 'new-file.jpeg');
+    const croppedImage = await getCroppedImg(imgRef.current, completedCrop);
     const storage = getStorage();
     const storageRef = ref(storage, `profile-pictures/${user.uid}`);
     
@@ -260,7 +261,7 @@ export default function ProfilePage() {
               aspect={1}
               circularCrop
             >
-              <img src={imgSrc} alt="Crop preview" style={{ maxHeight: '70vh' }} />
+              <img ref={imgRef} src={imgSrc} alt="Crop preview" style={{ maxHeight: '70vh' }} />
             </ReactCrop>
             </div>
           )}
@@ -276,46 +277,37 @@ export default function ProfilePage() {
   );
 }
 
-function getCroppedImg(imageSrc: string, crop: Crop, fileName: string): Promise<string> {
-    return new Promise((resolve) => {
-        const image = new Image();
-        image.src = imageSrc;
-        image.onload = () => {
-            const canvas = document.createElement('canvas');
-            const scaleX = image.naturalWidth / image.width;
-            const scaleY = image.naturalHeight / image.height;
-            
-            // Ensure crop dimensions are not null/undefined
-            const cropWidth = crop.width ?? 0;
-            const cropHeight = crop.height ?? 0;
-            const cropX = crop.x ?? 0;
-            const cropY = crop.y ?? 0;
+function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    const cropWidth = crop.width ?? 0;
+    const cropHeight = crop.height ?? 0;
+    const cropX = crop.x ?? 0;
+    const cropY = crop.y ?? 0;
 
-            canvas.width = cropWidth;
-            canvas.height = cropHeight;
-            const ctx = canvas.getContext('2d');
-            if(!ctx) {
-                console.error("Could not get 2d context from canvas");
-                return;
-            }
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      reject(new Error("Could not get 2d context from canvas"));
+      return;
+    }
 
-            ctx.drawImage(
-                image,
-                cropX * scaleX,
-                cropY * scaleY,
-                cropWidth * scaleX,
-                cropHeight * scaleY,
-                0,
-                0,
-                cropWidth,
-                cropHeight
-            );
+    ctx.drawImage(
+      image,
+      cropX * scaleX,
+      cropY * scaleY,
+      cropWidth * scaleX,
+      cropHeight * scaleY,
+      0,
+      0,
+      cropWidth,
+      cropHeight
+    );
 
-            resolve(canvas.toDataURL('image/jpeg'));
-        };
-        image.onerror = (error) => {
-            console.error("Image loading failed", error);
-            // You might want to reject the promise here
-        }
-    });
+    resolve(canvas.toDataURL('image/jpeg'));
+  });
 }

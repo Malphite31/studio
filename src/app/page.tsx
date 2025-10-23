@@ -203,6 +203,7 @@ export default function DashboardPage() {
                       items={wishlistItems || []}
                       addWishlistItem={addWishlistItem}
                       contributeToWishlist={contributeToWishlist}
+                      addExpense={addExpense}
                     />
                   </CardContent>
                 </Card>
