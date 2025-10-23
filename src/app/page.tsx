@@ -7,8 +7,6 @@ import DashboardHeader from '@/components/dashboard-header';
 import RecentExpenses from '@/components/recent-expenses';
 import SpendingBreakdown from '@/components/spending-breakdown';
 import BudgetStatus from '@/components/budget-status';
-import AiBudgetTool from '@/components/ai-budget-tool';
-import AiInsights from '@/components/ai-insights';
 import { Toaster } from '@/components/ui/toaster';
 
 export default function DashboardPage() {
@@ -44,9 +42,6 @@ export default function DashboardPage() {
         updateBudgets={updateBudgets}
       />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-          <AiInsights expenses={expenses} budgetGoals={budgetGoals} />
-        </div>
         <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
           <div className="xl:col-span-2 grid gap-4 md:gap-8">
              <SpendingBreakdown expenses={expenses} />
@@ -54,11 +49,6 @@ export default function DashboardPage() {
           </div>
           <div className="grid gap-4 md:gap-8">
             <RecentExpenses expenses={expenses} />
-            <AiBudgetTool
-              expenses={expenses}
-              income={income}
-              setIncome={setIncome}
-            />
           </div>
         </div>
       </main>
