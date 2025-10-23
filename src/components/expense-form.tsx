@@ -119,9 +119,10 @@ export function ExpenseForm({
   }, [expenseToEdit, isEditMode, form, open]);
   
   const category = form.watch('category');
+  const isIou = category === 'Borrow' || category === 'Lent';
 
   function onSubmit(values: FormValues) {
-    const isWalletRequired = values.category !== 'Borrow' && values.category !== 'Lent';
+    const isWalletRequired = !isIou;
 
     if (isWalletRequired && !values.walletId) {
       toast({
@@ -139,11 +140,11 @@ export function ExpenseForm({
             category: values.category as Category,
             walletId: values.walletId,
         });
-    } else if (values.category === 'Borrow' || values.category === 'Lent') {
+    } else if (isIou) {
       addIou?.({
         name: values.name,
         amount: values.amount,
-        type: values.category,
+        type: values.category as 'Borrow' | 'Lent',
         dueDate: values.dueDate || addDays(new Date(), 30),
       });
       toast({
@@ -266,7 +267,7 @@ export function ExpenseForm({
                 </FormItem>
               )}
             />
-             {(category === 'Expense' || category === 'Income' || isEditMode) && category !== 'Borrow' && category !== 'Lent' && (
+             {(!isIou || isEditMode) && (
                 <FormField
                   control={form.control}
                   name="walletId"
@@ -292,7 +293,7 @@ export function ExpenseForm({
                   )}
                 />
              )}
-             {!isEditMode && (category === 'Borrow' || category === 'Lent') && (
+             {!isEditMode && isIou && (
                  <FormField
                   control={form.control}
                   name="dueDate"
