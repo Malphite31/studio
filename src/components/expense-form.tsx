@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -66,16 +66,32 @@ interface ExpenseFormProps {
   addExpense?: (expense: Omit<Expense, 'id' | 'date' | 'userId'>) => void;
   addIou?: (iou: Omit<Iou, 'id' | 'paid' | 'userId'>) => void;
   addIncome?: (income: Omit<Income, 'id' | 'date' | 'userId'>) => void;
-  triggerType: 'button' | 'fab' | 'edit';
+  triggerType: 'button' | 'fab' | 'dialog';
   wallets: EWallet[];
   expenseToEdit?: Expense;
   onUpdate?: (expenseId: string, oldAmount: number, updatedData: Partial<Expense>) => void;
   children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallets, expenseToEdit, onUpdate, children }: ExpenseFormProps) {
-  const [open, setOpen] = useState(false);
+export function ExpenseForm({ 
+    addExpense, 
+    addIou, 
+    addIncome, 
+    triggerType, 
+    wallets, 
+    expenseToEdit, 
+    onUpdate, 
+    children,
+    open: controlledOpen,
+    onOpenChange: setControlledOpen,
+}: ExpenseFormProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const { toast } = useToast();
+
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = setControlledOpen ?? setInternalOpen;
 
   const isEditMode = !!expenseToEdit;
 
@@ -83,19 +99,26 @@ export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallet
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: isEditMode ? {
-      name: expenseToEdit.name,
-      amount: expenseToEdit.amount,
-      category: expenseToEdit.category,
-      walletId: expenseToEdit.walletId,
-    } : {
-      name: '',
-      amount: 0,
-      category: 'Other',
-      date: new Date(),
-      walletId: allWallets.length > 0 ? allWallets[0].id : undefined,
-    },
   });
+
+  useEffect(() => {
+    if (isEditMode && expenseToEdit) {
+      form.reset({
+        name: expenseToEdit.name,
+        amount: expenseToEdit.amount,
+        category: expenseToEdit.category,
+        walletId: expenseToEdit.walletId,
+      });
+    } else {
+        form.reset({
+            name: '',
+            amount: 0,
+            category: 'Other',
+            date: new Date(),
+            walletId: allWallets.length > 0 ? allWallets[0].id : undefined,
+        });
+    }
+  }, [expenseToEdit, isEditMode, form, open, allWallets]);
   
   const category = form.watch('category');
 
@@ -163,9 +186,8 @@ export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallet
           <Plus className="h-6 w-6" />
           <span className="sr-only">Add Transaction</span>
       </Button>
-    ) : triggerType === 'edit' ? (
-      <span onClick={() => setOpen(true)}>{children}</span>
-    ) : (
+    ) : triggerType === 'dialog' ? null
+    : (
       <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add Transaction
@@ -174,9 +196,7 @@ export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallet
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {TriggerButton}
-      </DialogTrigger>
+        {TriggerButton && <DialogTrigger asChild>{TriggerButton}</DialogTrigger>}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Transaction' : 'Add a New Transaction'}</DialogTitle>

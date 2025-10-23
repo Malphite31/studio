@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Wallet, PlusCircle, Pencil } from 'lucide-react';
+import { Wallet, PlusCircle, Pencil, MoreVertical, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +20,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import type { EWallet } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
-import { EditDeleteButtons } from './edit-delete-buttons';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+
 
 interface EWalletsProps {
   wallets: EWallet[];
@@ -106,16 +108,45 @@ export default function EWallets({ wallets, addWallet, updateWallet, deleteWalle
                   <div className='flex items-center gap-2'>
                     <span className="font-semibold">{formatCurrency(wallet.balance)}</span>
                     {wallet.id !== 'cash' && (
-                        <EditDeleteButtons
-                            onEdit={() => handleEditClick(wallet)}
-                            onDelete={() => handleDeleteClick(wallet)}
-                            deleteWarning="Are you sure you want to delete this wallet? This might affect transaction history but won't delete the transactions themselves."
-                            className="opacity-0 group-hover:opacity-100"
-                        >
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditClick(wallet)}>
-                                <Pencil className="h-4 w-4" />
-                            </Button>
-                        </EditDeleteButtons>
+                       <AlertDialog>
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onSelect={() => handleEditClick(wallet)}>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Edit
+                                  </DropdownMenuItem>
+                                  <AlertDialogTrigger asChild>
+                                      <DropdownMenuItem className="text-destructive">
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete
+                                      </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+
+                           <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete this wallet? This might affect transaction history but won't delete the transactions themselves. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => handleDeleteClick(wallet)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                        Yes, Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                       </AlertDialog>
                     )}
                   </div>
                 </div>

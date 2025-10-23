@@ -20,10 +20,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { EditDeleteButtons } from './edit-delete-buttons';
 import { IncomeForm } from './income-form';
-import { Pencil, PlusCircle } from 'lucide-react';
+import { MoreVertical, Pencil, PlusCircle, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
+import { useState } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+
 
 interface IncomeTrackerProps {
   income: Income[];
@@ -38,6 +41,9 @@ const formatCurrency = (amount: number) =>
 
 
 export default function IncomeTracker({ income, wallets, onUpdateIncome, onDeleteIncome, addIncome }: IncomeTrackerProps) {
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
+
   const sortedIncome = [...income].sort((a, b) => {
     const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
     const dateB = b.date instanceof Timestamp ? b.date.toDate() : b.date;
@@ -47,79 +53,118 @@ export default function IncomeTracker({ income, wallets, onUpdateIncome, onDelet
 
   const totalIncome = sortedIncome.reduce((acc, item) => acc + item.amount, 0);
 
+  const handleEditClick = (income: Income) => {
+    setSelectedIncome(income);
+    setIsEditOpen(true);
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Income</CardTitle>
-        <CardDescription>Your recent income sources.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-64 pr-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className='p-2'>Source</TableHead>
-                <TableHead className="text-right p-2">Amount</TableHead>
-                <TableHead className="text-right p-2">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedIncome.length > 0 ? (
-                sortedIncome.map((item) => {
-                  const incomeDate = item.date instanceof Timestamp ? item.date.toDate() : item.date;
-                  return (
-                    <TableRow key={item.id} className="group">
-                      <TableCell className='p-2'>
-                          <div className="font-medium text-sm">{item.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                              {isValid(incomeDate) ? format(incomeDate, 'MMM d, yyyy') : 'Processing...'}
-                          </div>
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-green-600 p-2">
-                        +{formatCurrency(item.amount)}
-                      </TableCell>
-                      <TableCell className='p-2 text-right'>
-                        <EditDeleteButtons
-                          onEdit={() => {}}
-                          onDelete={() => onDeleteIncome(item)}
-                          deleteWarning="Are you sure you want to delete this income record?"
-                          className="opacity-0 group-hover:opacity-100"
-                        >
-                          <IncomeForm
-                            triggerType="edit"
-                            wallets={wallets}
-                            incomeToEdit={item}
-                            onUpdate={onUpdateIncome}
-                           >
-                             <Button variant="ghost" size="icon" className="h-7 w-7">
-                               <Pencil className="h-4 w-4" />
-                             </Button>
-                           </IncomeForm>
-                        </EditDeleteButtons>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Income</CardTitle>
+          <CardDescription>Your recent income sources.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-64 pr-4">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8 text-sm">
-                    No income recorded yet.
-                  </TableCell>
+                  <TableHead className='p-2'>Source</TableHead>
+                  <TableHead className="text-right p-2">Amount</TableHead>
+                  <TableHead className="text-right p-2">Actions</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-      </CardContent>
-      <CardFooter className="flex-col items-stretch gap-4">
-        <div className="flex justify-between items-center font-bold text-md border-t pt-4">
-            <span>Total Income:</span>
-            <span>{formatCurrency(totalIncome)}</span>
-        </div>
-         <IncomeForm triggerType='button' wallets={wallets} addIncome={addIncome}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Income
-        </IncomeForm>
-      </CardFooter>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {sortedIncome.length > 0 ? (
+                  sortedIncome.map((item) => {
+                    const incomeDate = item.date instanceof Timestamp ? item.date.toDate() : item.date;
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className='p-2'>
+                            <div className="font-medium text-sm">{item.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                                {isValid(incomeDate) ? format(incomeDate, 'MMM d, yyyy') : 'Processing...'}
+                            </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-green-600 p-2">
+                          +{formatCurrency(item.amount)}
+                        </TableCell>
+                        <TableCell className='p-2 text-right'>
+                          <AlertDialog>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onSelect={() => handleEditClick(item)}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Edit
+                                    </DropdownMenuItem>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                          Are you sure you want to delete this income record? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                          onClick={() => onDeleteIncome(item)}
+                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                          Yes, Delete
+                                      </AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-sm">
+                      No income recorded yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </CardContent>
+        <CardFooter className="flex-col items-stretch gap-4">
+          <div className="flex justify-between items-center font-bold text-md border-t pt-4">
+              <span>Total Income:</span>
+              <span>{formatCurrency(totalIncome)}</span>
+          </div>
+          <IncomeForm triggerType='button' wallets={wallets} addIncome={addIncome}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Income
+          </IncomeForm>
+        </CardFooter>
+      </Card>
+      {selectedIncome && (
+        <IncomeForm
+            triggerType='dialog'
+            open={isEditOpen}
+            onOpenChange={setIsEditOpen}
+            wallets={wallets}
+            incomeToEdit={selectedIncome}
+            onUpdate={onUpdateIncome}
+        />
+     )}
+    </>
   );
 }

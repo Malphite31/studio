@@ -21,9 +21,21 @@ import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
 import { ExpenseForm } from './expense-form';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
-import { EditDeleteButtons } from './edit-delete-buttons';
-import { Pencil } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useState } from 'react';
 
 interface RecentExpensesProps {
   expenses: Expense[];
@@ -37,6 +49,9 @@ const formatCurrency = (amount: number) =>
 
 
 export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpense, wallets }: RecentExpensesProps) {
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+
   const sortedExpenses = [...expenses].sort((a, b) => {
       const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
       const dateB = b.date instanceof Timestamp ? b.date.toDate() : b.date;
@@ -46,8 +61,15 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
   
   const recentExpenses = sortedExpenses.slice(0, 10);
   const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
+  
+  const handleEditClick = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setIsEditOpen(true);
+  };
+
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>Recent Transactions</CardTitle>
@@ -70,7 +92,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                 const Icon = CategoryIcons[expense.category];
                 const expenseDate = expense.date instanceof Timestamp ? expense.date.toDate() : new Date();
                 return (
-                  <TableRow key={expense.id} className="group">
+                  <TableRow key={expense.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center justify-center w-8 h-8 bg-secondary rounded-full">
@@ -88,23 +110,45 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                       -{formatCurrency(expense.amount)}
                     </TableCell>
                     <TableCell className="text-right">
-                       <EditDeleteButtons
-                            onEdit={() => {}} // The form itself is the edit button
-                            onDelete={() => onDeleteExpense(expense)}
-                            deleteWarning="Are you sure you want to delete this expense? This will revert the amount from the associated wallet."
-                            className="opacity-0 group-hover:opacity-100"
-                        >
-                            <ExpenseForm
-                                triggerType="edit"
-                                wallets={allWallets}
-                                expenseToEdit={expense}
-                                onUpdate={onUpdateExpense}
-                            >
-                                <Button variant="ghost" size="icon" className="h-7 w-7">
-                                    <Pencil className="h-4 w-4" />
-                                </Button>
-                            </ExpenseForm>
-                        </EditDeleteButtons>
+                       <AlertDialog>
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onSelect={() => handleEditClick(expense)}>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Edit
+                                  </DropdownMenuItem>
+                                  <AlertDialogTrigger asChild>
+                                      <DropdownMenuItem className="text-destructive">
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete
+                                      </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                              </DropdownMenuContent>
+                          </DropdownMenu>
+
+                           <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete this expense? This will revert the amount from the associated wallet. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => onDeleteExpense(expense)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                        Yes, Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                       </AlertDialog>
                     </TableCell>
                   </TableRow>
                 );
@@ -120,5 +164,16 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
         </Table>
       </CardContent>
     </Card>
+     {selectedExpense && (
+        <ExpenseForm
+            triggerType='dialog'
+            open={isEditOpen}
+            onOpenChange={setIsEditOpen}
+            wallets={allWallets}
+            expenseToEdit={selectedExpense}
+            onUpdate={onUpdateExpense}
+        />
+     )}
+    </>
   );
 }

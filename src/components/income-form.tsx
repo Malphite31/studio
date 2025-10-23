@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,12 +43,14 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface IncomeFormProps {
-  triggerType: 'button' | 'edit' | 'fab';
+  triggerType: 'button' | 'dialog';
   wallets: EWallet[];
   incomeToEdit?: Income;
   addIncome?: (income: Omit<Income, 'id' | 'date' | 'userId'>) => void;
   onUpdate?: (incomeId: string, oldAmount: number, updatedData: Partial<Income>) => void;
   children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function IncomeForm({
@@ -57,24 +59,37 @@ export function IncomeForm({
   incomeToEdit,
   addIncome,
   onUpdate,
-  children
+  children,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
 }: IncomeFormProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const { toast } = useToast();
   const isEditMode = !!incomeToEdit;
 
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = setControlledOpen ?? setInternalOpen;
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: isEditMode ? {
-      name: incomeToEdit.name,
-      amount: incomeToEdit.amount,
-      walletId: incomeToEdit.walletId,
-    } : {
-      name: '',
-      amount: 0,
-      walletId: wallets.length > 0 ? wallets[0].id : undefined,
-    },
   });
+
+  useEffect(() => {
+    if (isEditMode && incomeToEdit) {
+        form.reset({
+            name: incomeToEdit.name,
+            amount: incomeToEdit.amount,
+            walletId: incomeToEdit.walletId,
+        });
+    } else {
+        form.reset({
+            name: '',
+            amount: 0,
+            walletId: wallets.length > 0 ? wallets[0].id : undefined,
+        });
+    }
+  }, [incomeToEdit, isEditMode, form, open, wallets]);
+
 
   function onSubmit(values: FormValues) {
     if (isEditMode && onUpdate && incomeToEdit) {
@@ -85,18 +100,15 @@ export function IncomeForm({
       toast({ title: 'Income Added!', description: `An income of ${values.amount} has been recorded.` });
     }
     setOpen(false);
-    if (!isEditMode) form.reset();
   }
 
-  const TriggerButton = triggerType === 'edit'
-    ? <span onClick={() => setOpen(true)}>{children}</span>
-    : <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>{children}</Button>;
+  const TriggerButton = triggerType === 'button'
+    ? <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>{children}</Button>
+    : null; // 'dialog' trigger is handled externally
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {TriggerButton}
-      </DialogTrigger>
+      {TriggerButton && <DialogTrigger asChild>{TriggerButton}</DialogTrigger>}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Income' : 'Add Income'}</DialogTitle>
