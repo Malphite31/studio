@@ -19,13 +19,20 @@ import { Badge } from '@/components/ui/badge';
 import type { Expense } from '@/lib/types';
 import { format } from 'date-fns';
 import { CategoryIcons } from './icons';
+import { Timestamp } from 'firebase/firestore';
 
 interface RecentExpensesProps {
   expenses: Expense[];
 }
 
 export default function RecentExpenses({ expenses }: RecentExpensesProps) {
-  const recentExpenses = expenses.slice(0, 5);
+  const sortedExpenses = [...expenses].sort((a, b) => {
+      const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
+      const dateB = b.date instanceof Timestamp ? b.date.toDate() : b.date;
+      return dateB.getTime() - dateA.getTime();
+  });
+  
+  const recentExpenses = sortedExpenses.slice(0, 5);
 
   return (
     <Card>
@@ -47,6 +54,7 @@ export default function RecentExpenses({ expenses }: RecentExpensesProps) {
             {recentExpenses.length > 0 ? (
               recentExpenses.map((expense) => {
                 const Icon = CategoryIcons[expense.category];
+                const expenseDate = expense.date instanceof Timestamp ? expense.date.toDate() : expense.date;
                 return (
                   <TableRow key={expense.id}>
                     <TableCell>
@@ -57,7 +65,7 @@ export default function RecentExpenses({ expenses }: RecentExpensesProps) {
                         <div>
                           <div className="font-medium">{expense.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            {format(expense.date, 'MMM d, yyyy')}
+                            {format(expenseDate, 'MMM d, yyyy')}
                           </div>
                         </div>
                       </div>

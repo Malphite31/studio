@@ -1,6 +1,7 @@
 'use client';
 
 import { format, isPast, differenceInDays } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
 import { HandCoins, ArrowRightLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { Iou } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,23 +47,6 @@ export default function DebtTracker({ ious, markAsPaid }: DebtTrackerProps) {
           description: `${iou.name} has been marked as paid.`
       })
   }
-  
-  const DueDateBadge = ({ dueDate }: { dueDate: Date }) => {
-    const isOverdue = isPast(dueDate);
-    const days = Math.abs(differenceInDays(new Date(), dueDate));
-    let text, variant: "default" | "destructive" | "secondary" | "outline" | null | undefined, icon;
-
-    if (isOverdue) {
-      text = `${days} ${days === 1 ? 'day' : 'days'} overdue`;
-      variant = "destructive";
-      icon = <AlertCircle className="h-3 w-3 mr-1" />;
-    } else {
-      text = `in ${days} ${days === 1 ? 'day' : 'days'}`;
-      variant = "secondary";
-    }
-
-    return <Badge variant={variant} className="flex items-center w-fit">{icon}{text}</Badge>;
-  };
 
   return (
     <div className="grid gap-6 mt-4">
@@ -121,41 +105,45 @@ function IouTable({ ious, onPaid, type }: IouTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ious.map(iou => (
-                <TableRow key={iou.id}>
-                  <TableCell className="font-medium">{iou.name}</TableCell>
-                  <TableCell className={`text-right font-medium ${iou.type === 'Borrow' ? 'text-destructive' : 'text-green-600'}`}>
-                    {iou.type === 'Borrow' ? '- ' : '+ '}
-                    ₱{iou.amount.toFixed(2)}
-                  </TableCell>
-                  {type !== 'paid' && 
-                    <TableCell>
-                      <span className="text-sm">{format(iou.dueDate, 'MMM d, yyyy')}</span>
-                    </TableCell>
-                  }
-                  {onPaid && type !== 'paid' && (
-                     <TableCell className="text-right">
-                       <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm">Mark as Paid</Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Settle Transaction?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                  This will mark "{iou.name}" as paid and move it to your settled transactions. This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onPaid(iou)}>Confirm</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
+              {ious.map(iou => {
+                  const dueDate = iou.dueDate instanceof Timestamp ? iou.dueDate.toDate() : iou.dueDate;
+
+                  return (
+                    <TableRow key={iou.id}>
+                      <TableCell className="font-medium">{iou.name}</TableCell>
+                      <TableCell className={`text-right font-medium ${iou.type === 'Borrow' ? 'text-destructive' : 'text-green-600'}`}>
+                        {iou.type === 'Borrow' ? '- ' : '+ '}
+                        ₱{iou.amount.toFixed(2)}
+                      </TableCell>
+                      {type !== 'paid' && 
+                        <TableCell>
+                          <span className="text-sm">{format(dueDate, 'MMM d, yyyy')}</span>
+                        </TableCell>
+                      }
+                      {onPaid && type !== 'paid' && (
+                         <TableCell className="text-right">
+                           <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm">Mark as Paid</Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Settle Transaction?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This will mark "{iou.name}" as paid and move it to your settled transactions. This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onPaid(iou)}>Confirm</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+              })}
             </TableBody>
           </Table>
     )

@@ -30,7 +30,7 @@ const formSchema = z.object({
 
 interface WishlistItemProps {
   item: WishlistItemType;
-  contributeToWishlist: (id: string, amount: number) => void;
+  contributeToWishlist: (id: string, amount: number, currentSaved: number, targetAmount: number) => void;
 }
 
 export default function WishlistItem({ item, contributeToWishlist }: WishlistItemProps) {
@@ -52,7 +52,7 @@ export default function WishlistItem({ item, contributeToWishlist }: WishlistIte
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    contributeToWishlist(item.id, values.amount);
+    contributeToWishlist(item.id, values.amount, item.savedAmount, item.targetAmount);
     toast({
         title: "Contribution added!",
         description: `You added ₱${values.amount.toFixed(2)} to ${item.name}.`,
