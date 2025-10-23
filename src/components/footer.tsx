@@ -7,7 +7,7 @@ export default function Footer() {
     <footer className="w-full mt-auto">
       <div className="container mx-auto flex items-center justify-center p-4 text-sm text-muted-foreground">
         <Coins className="h-4 w-4 mr-2 text-primary" />
-        <span>Built with ❤️ by SpendWise</span>
+        <span>Made by Benz Siangco</span>
       </div>
     </footer>
   );
