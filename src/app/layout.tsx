@@ -23,7 +23,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased theme-violet">
+      <body className="font-body antialiased">
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

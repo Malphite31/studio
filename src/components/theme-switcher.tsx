@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Moon, Sun, Palette } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Button } from '@/components/ui/button';
@@ -10,54 +10,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu';
 
-const themes = [
-    { name: 'Violet', value: 'theme-violet'},
-    { name: 'Blue', value: 'theme-blue'},
-    { name: 'Green', value: 'theme-green'},
-    { name: 'Orange', value: 'theme-orange'},
-    { name: 'Rose', value: 'theme-rose'},
-    { name: 'Slate', value: 'theme-slate'},
-    { name: 'Gray', value: 'theme-gray'},
-    { name: 'Zinc', value: 'theme-zinc'},
-    { name: 'Neutral', value: 'theme-neutral'},
-    { name: 'Stone', value: 'theme-stone'},
-]
-
 export function ThemeSwitcher() {
-  const { setTheme, theme } = useTheme();
-
-  const handleColorChange = (color: string) => {
-    const colorThemes = themes.map(t => t.value);
-    
-    // Remove any existing color theme classes
-    const currentClasses = document.body.className.split(' ');
-    const newClasses = currentClasses.filter(cls => !colorThemes.includes(cls));
-    
-    // Add the new color theme class
-    newClasses.push(color);
-    document.body.className = newClasses.join(' ');
-
-    // Store the color theme preference
-    localStorage.setItem('color-theme', color);
-  };
-  
-  React.useEffect(() => {
-    // On mount, apply the stored color theme
-    const storedColor = localStorage.getItem('color-theme');
-    const hasColorTheme = Array.from(document.body.classList).some(c => themes.map(t => t.value).includes(c));
-    
-    if (storedColor && !hasColorTheme) {
-      document.body.classList.add(storedColor);
-    } else if (!hasColorTheme) {
-      document.body.classList.add('theme-violet'); // Default
-    }
-  }, []);
+  const { setTheme } = useTheme();
 
   return (
     <DropdownMenu>
@@ -78,24 +34,6 @@ export function ThemeSwitcher() {
         <DropdownMenuItem onClick={() => setTheme('system')}>
           System
         </DropdownMenuItem>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Palette className="mr-2 h-4 w-4" />
-            <span>Color</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              {themes.map((colorTheme) => (
-                <DropdownMenuItem
-                  key={colorTheme.value}
-                  onClick={() => handleColorChange(colorTheme.value)}
-                >
-                  {colorTheme.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
   );
