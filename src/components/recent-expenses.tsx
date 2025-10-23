@@ -100,6 +100,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                           <div className="font-medium">{expense.name}</div>
                           <div className="text-sm text-muted-foreground">
                             {isValid(expenseDate) ? format(expenseDate, 'MMM d, yyyy') : 'Processing...'}
+                             {expense.paymentMethod && ` via ${expense.paymentMethod}`}
                           </div>
                         </div>
                       </div>

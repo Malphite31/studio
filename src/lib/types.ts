@@ -11,6 +11,7 @@ export interface Expense {
   date: Date | Timestamp;
   userId: string;
   walletId?: string;
+  paymentMethod?: string;
 }
 
 export type BudgetGoal = {

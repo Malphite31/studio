@@ -102,12 +102,18 @@ export default function DashboardPage() {
     })) || [];
   }, [budgetGoalsData, user]);
 
+  const allWallets = useMemo(() => [CASH_ON_HAND_WALLET, ...(wallets || [])], [wallets]);
+
+
   const addExpense = async (expense: Omit<ExpenseType, 'id' | 'date' | 'userId'>) => {
     if (!user || !expensesQuery || !expense.walletId) return;
+    
+    const paymentMethod = allWallets.find(w => w.id === expense.walletId)?.name;
 
     const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
     const newExpenseData = {
         ...expense,
+        paymentMethod,
         date: serverTimestamp(),
         userId: user.uid,
     };
@@ -206,11 +212,14 @@ export default function DashboardPage() {
         const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', id);
         const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
         
+        const paymentMethod = allWallets.find(w => w.id === walletId)?.name;
+
         const newExpenseData: Omit<ExpenseType, 'id' | 'userId' | 'date'> = {
             name: `Contribution to: ${name}`,
             amount: amount,
             category: 'Other' as Category,
-            walletId: walletId
+            walletId: walletId,
+            paymentMethod: paymentMethod,
         };
         
         if (walletId !== CASH_ON_HAND_WALLET.id) {
@@ -279,6 +288,10 @@ export default function DashboardPage() {
 
   const updateExpense = async (expenseId: string, oldAmount: number, updatedData: Partial<ExpenseType>) => {
     if (!user) return;
+    
+    if(updatedData.walletId) {
+        updatedData.paymentMethod = allWallets.find(w => w.id === updatedData.walletId)?.name;
+    }
 
     const expenseRef = doc(firestore, 'users', user.uid, 'expenses', expenseId);
     
@@ -428,7 +441,6 @@ export default function DashboardPage() {
     return <Login />;
   }
   
-  const allWallets = [CASH_ON_HAND_WALLET, ...(wallets || [])];
 
   return (
     <>
