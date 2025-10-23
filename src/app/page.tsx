@@ -61,7 +61,14 @@ export default function DashboardPage() {
     [expenses]
   );
 
-  const balance = useMemo(() => totalIncome - totalExpenses, [totalIncome, totalExpenses]);
+  const netIouBalance = useMemo(() => {
+    return ious?.reduce((sum, iou) => {
+      if (iou.paid) return sum;
+      return iou.type === 'Borrow' ? sum + iou.amount : sum - iou.amount;
+    }, 0) || 0;
+  }, [ious]);
+
+  const balance = useMemo(() => totalIncome - totalExpenses + netIouBalance, [totalIncome, totalExpenses, netIouBalance]);
 
 
   const budgetGoals: BudgetGoal[] = useMemo(() => {
