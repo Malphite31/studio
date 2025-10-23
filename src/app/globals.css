@@ -64,45 +64,45 @@
 
   .theme-blue {
     --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 0 0% 98%;
+    --primary-foreground: 210 40% 98%;
     --ring: 217.2 91.2% 59.8%;
   }
   .dark.theme-blue {
     --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 0 0% 98%;
+    --primary-foreground: 210 40% 98%;
     --ring: 217.2 91.2% 59.8%;
   }
 
   .theme-green {
     --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 0 0% 98%;
+    --primary-foreground: 144.9 80.4% 97.3%;
     --ring: 142.1 76.2% 36.3%;
   }
   .dark.theme-green {
     --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 0 0% 98%;
+    --primary-foreground: 144.9 80.4% 97.3%;
     --ring: 142.1 76.2% 36.3%;
   }
 
   .theme-orange {
     --primary: 24.6 95% 53.1%;
-    --primary-foreground: 0 0% 98%;
+    --primary-foreground: 20 14.3% 4.1%;
     --ring: 24.6 95% 53.1%;
   }
   .dark.theme-orange {
     --primary: 24.6 95% 53.1%;
-    --primary-foreground: 0 0% 98%;
+    --primary-foreground: 20 14.3% 4.1%;
     --ring: 24.6 95% 53.1%;
   }
   
   .theme-rose {
     --primary: 346.8 77.2% 49.8%;
-    --primary-foreground: 0 0% 98%;
+    --primary-foreground: 355.7 100% 97.3%;
     --ring: 346.8 77.2% 49.8%;
   }
   .dark.theme-rose {
     --primary: 346.8 77.2% 49.8%;
-    --primary-foreground: 0 0% 98%;
+    --primary-foreground: 355.7 100% 97.3%;
     --ring: 346.8 77.2% 49.8%;
   }
 
@@ -118,14 +118,14 @@
   }
 
   .theme-gray {
-    --primary: 240 4.8% 95.9%;
-    --primary-foreground: 240 5.9% 10%;
-    --ring: 240 4.8% 95.9%;
+    --primary: 220 8.3% 95.9%;
+    --primary-foreground: 215.4 16.3% 46.9%;
+    --ring: 220 8.3% 95.9%;
   }
   .dark.theme-gray {
-    --primary: 240 3.7% 15.9%;
-    --primary-foreground: 0 0% 98%;
-    --ring: 240 3.7% 15.9%;
+    --primary: 215 13.8% 34.1%;
+    --primary-foreground: 210 40% 98%;
+    --ring: 215 13.8% 34.1%;
   }
 
   .theme-zinc {
@@ -151,14 +151,14 @@
   }
 
   .theme-stone {
-    --primary: 240 5% 33.5%;
+    --primary: 25 5.3% 44.7%;
     --primary-foreground: 0 0% 98%;
-    --ring: 240 5% 33.5%;
+    --ring: 25 5.3% 44.7%;
   }
   .dark.theme-stone {
-    --primary: 240 5% 33.5%;
+    --primary: 25 5.3% 44.7%;
     --primary-foreground: 0 0% 98%;
-    --ring: 240 5% 33.5%;
+    --ring: 25 5.3% 44.7%;
   }
 }
 

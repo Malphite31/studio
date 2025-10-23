@@ -30,24 +30,32 @@ const themes = [
 ]
 
 export function ThemeSwitcher() {
-  const { setTheme } = useTheme();
+  const { setTheme, theme } = useTheme();
 
   const handleColorChange = (color: string) => {
     const colorThemes = themes.map(t => t.value);
-    document.body.classList.forEach(className => {
-        if (colorThemes.includes(className)) {
-            document.body.classList.remove(className);
-        }
-    });
-    document.body.classList.add(color);
+    
+    // Remove any existing color theme classes
+    const currentClasses = document.body.className.split(' ');
+    const newClasses = currentClasses.filter(cls => !colorThemes.includes(cls));
+    
+    // Add the new color theme class
+    newClasses.push(color);
+    document.body.className = newClasses.join(' ');
+
+    // Store the color theme preference
+    localStorage.setItem('color-theme', color);
   };
   
   React.useEffect(() => {
-    // Set a default theme class if none is present
-    const colorThemes = themes.map(t => t.value);
-    const hasColorTheme = Array.from(document.body.classList).some(c => colorThemes.includes(c));
-    if (!hasColorTheme) {
-        document.body.classList.add('theme-violet');
+    // On mount, apply the stored color theme
+    const storedColor = localStorage.getItem('color-theme');
+    const hasColorTheme = Array.from(document.body.classList).some(c => themes.map(t => t.value).includes(c));
+    
+    if (storedColor && !hasColorTheme) {
+      document.body.classList.add(storedColor);
+    } else if (!hasColorTheme) {
+      document.body.classList.add('theme-violet'); // Default
     }
   }, []);
 
