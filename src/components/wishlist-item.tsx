@@ -30,7 +30,7 @@ const formSchema = z.object({
 
 interface WishlistItemProps {
   item: WishlistItemType;
-  contributeToWishlist: (id: string, amount: number, currentSaved: number, targetAmount: number) => void;
+  contributeToWishlist: (item: WishlistItemType, amount: number) => void;
   purchaseWishlistItem: (item: WishlistItemType) => void;
 }
 
@@ -50,10 +50,10 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    contributeToWishlist(item.id, values.amount, item.savedAmount, item.targetAmount);
+    contributeToWishlist(item, values.amount);
     toast({
         title: "Contribution added!",
-        description: `You added ${formatCurrency(values.amount)} to ${item.name}.`,
+        description: `You added ${formatCurrency(values.amount)} to ${item.name}. Your balance has been updated.`,
     });
     form.reset();
   }
@@ -62,7 +62,7 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
     purchaseWishlistItem(item);
     toast({
         title: "Item Purchased!",
-        description: `Enjoy your new ${item.name}! An expense has been recorded, and your balance is updated.`,
+        description: `Enjoy your new ${item.name}! Your final expense has been recorded.`,
     })
   }
 
@@ -118,12 +118,12 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
           <AlertDialogDescription>
-            This will record the purchase of your {item.name} for {formatCurrency(item.targetAmount)}. This action will create a new expense and remove the item from your wishlist. This cannot be undone.
+            This will record the purchase of your {item.name}. If there's a remaining balance, it will be added as a final expense. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleBuy}>Yes, Buy It</AlertDialogAction>
+          <AlertDialogCancel>Decide Later</AlertDialogCancel>
+          <AlertDialogAction onClick={handleBuy}>Yes, Buy It Now</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

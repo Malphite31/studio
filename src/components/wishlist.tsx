@@ -7,7 +7,7 @@ import WishlistItem from './wishlist-item';
 interface WishlistProps {
   items: WishlistItemType[];
   addWishlistItem: (item: Omit<WishlistItemType, 'id' | 'savedAmount' | 'userId'>) => void;
-  contributeToWishlist: (id: string, amount: number, currentSaved: number, targetAmount: number) => void;
+  contributeToWishlist: (item: WishlistItemType, amount: number) => void;
   purchaseWishlistItem: (item: WishlistItemType) => void;
 }
 

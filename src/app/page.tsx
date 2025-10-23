@@ -142,11 +142,21 @@ export default function DashboardPage() {
     addDocumentNonBlocking(collection(firestore, 'users', user.uid, 'wishlist'), newWishlistItem);
   };
 
-  const contributeToWishlist = (id: string, amount: number, currentSaved: number, targetAmount: number) => {
+  const contributeToWishlist = (item: WishlistItemType, amount: number) => {
     if (!user) return;
+    const { id, savedAmount, targetAmount, name } = item;
+    
+    // 1. Update the saved amount on the wishlist item
     const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', id);
-    const newSavedAmount = Math.min(currentSaved + amount, targetAmount);
+    const newSavedAmount = Math.min(savedAmount + amount, targetAmount);
     setDocumentNonBlocking(wishlistItemRef, { savedAmount: newSavedAmount }, { merge: true });
+
+    // 2. Create a corresponding expense for the contribution
+    addExpense({
+      name: `Contribution to: ${name}`,
+      amount: amount,
+      category: 'Other'
+    });
   };
   
   const markIouAsPaid = (id: string) => {
@@ -158,16 +168,21 @@ export default function DashboardPage() {
   const purchaseWishlistItem = (item: WishlistItemType) => {
     if(!user) return;
 
-    // 1. Add an expense
-    addExpense({
-      name: `(Wishlist) ${item.name}`,
-      amount: item.targetAmount,
-      category: 'Other'
-    });
+    // The full amount is already accounted for via contributions.
+    // We just need to mark the item as purchased.
+    // If there was a difference between saved and target, we would add that as an expense here.
+    const difference = item.targetAmount - item.savedAmount;
+    if (difference > 0) {
+      addExpense({
+        name: `Final payment for ${item.name}`,
+        amount: difference,
+        category: 'Other'
+      });
+    }
 
-    // 2. Mark the wishlist item as purchased
+    // Mark the wishlist item as purchased
     const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', item.id);
-    setDocumentNonBlocking(wishlistItemRef, { purchased: true }, { merge: true });
+    setDocumentNonBlocking(wishlistItemRef, { purchased: true, savedAmount: item.targetAmount }, { merge: true });
   }
 
   if (isUserLoading) {
