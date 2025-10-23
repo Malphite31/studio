@@ -63,7 +63,7 @@ export default function RecentExpenses({ expenses }: RecentExpensesProps) {
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      -${expense.amount.toFixed(2)}
+                      -₱{expense.amount.toFixed(2)}
                     </TableCell>
                   </TableRow>
                 );

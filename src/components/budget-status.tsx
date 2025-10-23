@@ -58,7 +58,7 @@ export default function BudgetStatus({
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">{status.category}</span>
                   <span className={`font-medium ${status.overBudget ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    ${status.spent.toFixed(2)} / ${status.amount.toFixed(2)}
+                    ₱{status.spent.toFixed(2)} / ₱{status.amount.toFixed(2)}
                   </span>
                 </div>
                 <Progress

@@ -55,7 +55,7 @@ export default function WishlistItem({ item, contributeToWishlist }: WishlistIte
     contributeToWishlist(item.id, values.amount);
     toast({
         title: "Contribution added!",
-        description: `You added $${values.amount.toFixed(2)} to ${item.name}.`,
+        description: `You added ₱${values.amount.toFixed(2)} to ${item.name}.`,
     });
     form.reset();
   }
@@ -79,7 +79,7 @@ export default function WishlistItem({ item, contributeToWishlist }: WishlistIte
                 {item.name}
               </CardTitle>
               <CardDescription>
-                Saved ${item.savedAmount.toFixed(2)} of ${item.targetAmount.toFixed(2)}
+                Saved ₱{item.savedAmount.toFixed(2)} of ₱{item.targetAmount.toFixed(2)}
               </CardDescription>
             </div>
             {isGoalReached && <Sparkles className="h-6 w-6 text-yellow-400" />}
