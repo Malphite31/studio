@@ -42,9 +42,11 @@ export default function Login() {
         const user = userCredential.user;
         if(user) {
             const userProfileRef = doc(firestore, 'users', user.uid);
+            // Create a complete UserProfile object matching the schema
             setDocumentNonBlocking(userProfileRef, {
+                id: user.uid,
                 email: user.email,
-                username: user.email?.split('@')[0] || '',
+                username: user.email?.split('@')[0] || 'new-user',
                 createdAt: serverTimestamp(),
             }, { merge: true });
         }
