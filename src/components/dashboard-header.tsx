@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleUser, Coins, Menu, Settings, PlusCircle } from 'lucide-react';
+import { CircleUser, Coins, Menu, Settings } from 'lucide-react';
 import Link from 'next/link';
 import {
   Sheet,
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ExpenseForm } from './expense-form';
 import { BudgetForm } from './budget-form';
+import { ThemeSwitcher } from './theme-switcher';
 import type { Expense, BudgetGoal, Category } from '@/lib/types';
 
 interface DashboardHeaderProps {
@@ -39,6 +40,7 @@ export default function DashboardHeader({
         </div>
         <div className="ml-auto flex items-center gap-2">
             <div className='hidden sm:flex items-center gap-2'>
+                <ThemeSwitcher />
                 <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
                 <ExpenseForm addExpense={addExpense} />
             </div>
@@ -60,6 +62,7 @@ export default function DashboardHeader({
                             <span className="sr-only">SpendWise</span>
                         </Link>
                         <div className="flex flex-col gap-4">
+                            <ThemeSwitcher />
                             <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
                             <ExpenseForm addExpense={addExpense} />
                         </div>
