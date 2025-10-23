@@ -255,28 +255,32 @@ export default function ProfilePage() {
             const data = JSON.parse(e.target?.result as string);
             const batch = writeBatch(firestore);
             
-            // Delete all existing data
-            const collectionsToDelete = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
-            for (const collectionName of collectionsToDelete) {
+            // Define collections to manage
+            const collectionsToManage = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
+
+            // Delete all existing data in managed collections
+            for (const collectionName of collectionsToManage) {
                 const collectionRef = collection(firestore, 'users', user.uid, collectionName);
                 const snapshot = await getDocs(collectionRef);
                 snapshot.docs.forEach(doc => batch.delete(doc.ref));
             }
             
-            // Import new data
+            // Import new data from the file
             for (const collectionName in data) {
-                const collectionData = data[collectionName];
-                if (Array.isArray(collectionData)) {
-                    collectionData.forEach((item: any) => {
-                        const { id, ...itemData } = item;
-                        const docRef = doc(firestore, 'users', user.uid, collectionName, id);
-                        batch.set(docRef, itemData);
-                    });
+                if (collectionsToManage.includes(collectionName)) {
+                    const collectionData = data[collectionName];
+                    if (Array.isArray(collectionData)) {
+                        collectionData.forEach((item: any) => {
+                            const { id, ...itemData } = item;
+                            const docRef = doc(firestore, 'users', user.uid, collectionName, id);
+                            batch.set(docRef, itemData);
+                        });
+                    }
                 }
             }
 
             await batch.commit();
-            toast({ title: 'Import Successful!', description: 'All your data has been restored.' });
+            toast({ title: 'Import Successful!', description: 'All your financial data has been restored.' });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Import Failed', description: error.message });
         } finally {
@@ -386,7 +390,7 @@ export default function ProfilePage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Data Management</CardTitle>
-                    <CardDescription>Export your data or import it from a backup file.</CardDescription>
+                    <CardDescription>Export your financial data or import it from a backup file.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
                      <Button variant="outline" onClick={handleExport}>Export My Data</Button>
@@ -401,7 +405,7 @@ export default function ProfilePage() {
                 </CardContent>
                  <CardFooter>
                     <p className='text-xs text-muted-foreground'>
-                        <strong>Warning:</strong> Importing data will overwrite all current data in your account.
+                        <strong>Warning:</strong> Importing data will overwrite all current financial data in your account. Your user profile will not be affected.
                     </p>
                 </CardFooter>
             </Card>
@@ -448,7 +452,7 @@ export default function ProfilePage() {
         open={isImportConfirmOpen}
         onOpenChange={setImportConfirmOpen}
         title="Are you absolutely sure?"
-        description="This action cannot be undone. This will permanently delete all your current data and overwrite it with the backup file."
+        description="This action cannot be undone. This will permanently delete all your current financial data and overwrite it with the backup file."
         onConfirm={handleImportConfirm}
         confirmText="Yes, overwrite my data"
       />
