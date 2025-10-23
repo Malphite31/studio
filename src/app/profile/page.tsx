@@ -4,11 +4,10 @@ import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, serverTimestamp, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -34,25 +32,6 @@ const profileSchema = z.object({
   bio: z.string().max(160, 'Bio cannot be longer than 160 characters').optional(),
 });
 
-function centerAspectCrop(
-  mediaWidth: number,
-  mediaHeight: number,
-  aspect: number,
-) {
-  return centerCrop(
-    makeAspectCrop(
-      {
-        unit: '%',
-        width: 90,
-      },
-      aspect,
-      mediaWidth,
-      mediaHeight,
-    ),
-    mediaWidth,
-    mediaHeight,
-  )
-}
 
 export default function ProfilePage() {
   const { user } = useUser();
@@ -65,13 +44,7 @@ export default function ProfilePage() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
-  const [imgSrc, setImgSrc] = useState('');
-  const [crop, setCrop] = useState<Crop>();
-  const [completedCrop, setCompletedCrop] = useState<Crop>();
-  const [isCropModalOpen, setCropModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
   const [isResetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -87,12 +60,9 @@ export default function ProfilePage() {
   });
 
   const handleFileSelect = (file: File) => {
+    if (!user) return;
     if (file && file.type.startsWith('image/')) {
-        setCrop(undefined);
-        const reader = new FileReader();
-        reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
-        reader.readAsDataURL(file);
-        setCropModalOpen(true);
+        handleDirectUpload(file);
     } else {
         toast({ variant: 'destructive', title: 'Invalid file type', description: 'Please select an image file.' });
     }
@@ -125,23 +95,17 @@ export default function ProfilePage() {
   };
 
 
-  const handleCrop = async () => {
-    if (!completedCrop || !imgRef.current || !user) return;
+  const handleDirectUpload = async (file: File) => {
+    if (!user) return;
   
     setIsUploading(true);
-    setUploadProgress(0); // Reset progress
   
     try {
-      const croppedImageDataUrl = getCroppedImgDataUrl(imgRef.current, completedCrop);
       const storage = getStorage();
       const storageRef = ref(storage, `profile-pictures/${user.uid}`);
       
-      // Use uploadString with 'data_url' format
-      const uploadTask = uploadString(storageRef, croppedImageDataUrl, 'data_url');
+      await uploadBytes(storageRef, file);
       
-      // While we don't get progress updates from uploadString, we can handle the final state.
-      await uploadTask;
-  
       const downloadURL = await getDownloadURL(storageRef);
       if (userProfileRef) {
         setDocumentNonBlocking(userProfileRef, { profilePicture: downloadURL }, { merge: true });
@@ -153,8 +117,6 @@ export default function ProfilePage() {
       toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
     } finally {
       setIsUploading(false);
-      setCropModalOpen(false);
-      setUploadProgress(100); // Set to 100 on completion or failure for UI feedback
     }
   };
 
@@ -305,10 +267,6 @@ export default function ProfilePage() {
     }
   };
   
-  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-    const { width, height } = e.currentTarget;
-    setCrop(centerAspectCrop(width, height, 1));
-  }
 
   if (isProfileLoading) return <div>Loading profile...</div>
 
@@ -345,11 +303,18 @@ export default function ProfilePage() {
                         <AvatarImage src={userProfile?.profilePicture} />
                         <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <div className='flex flex-col items-center gap-1'>
-                        <UploadCloud className="w-8 h-8 text-muted-foreground" />
-                        <p className='font-semibold'>Drag & drop or click to upload</p>
-                        <p className='text-sm text-muted-foreground'>Recommended size: 400x400px</p>
-                    </div>
+                    {isUploading ? (
+                         <div className="w-full max-w-xs text-center">
+                            <p className="text-sm">Uploading...</p>
+                            <Progress value={100} className="w-full animate-pulse mt-2" />
+                        </div>
+                    ) : (
+                        <div className='flex flex-col items-center gap-1'>
+                            <UploadCloud className="w-8 h-8 text-muted-foreground" />
+                            <p className='font-semibold'>Drag & drop or click to upload</p>
+                            <p className='text-sm text-muted-foreground'>A new profile picture will be uploaded directly.</p>
+                        </div>
+                    )}
                 </div>
                 </div>
 
@@ -429,41 +394,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Dialog open={isCropModalOpen} onOpenChange={setCropModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crop your new profile picture</DialogTitle>
-          </DialogHeader>
-          {imgSrc && (
-            <div className='flex justify-center'>
-            <ReactCrop
-              crop={crop}
-              onChange={c => setCrop(c)}
-              onComplete={c => setCompletedCrop(c)}
-              aspect={1}
-              circularCrop
-            >
-              <img ref={imgRef} src={imgSrc} alt="Crop preview" style={{ maxHeight: '70vh' }} onLoad={onImageLoad} />
-            </ReactCrop>
-            </div>
-          )}
-          <DialogFooter>
-            {isUploading ? (
-              <div className="w-full">
-                <p className="text-center text-sm">Uploading...</p>
-                <Progress value={100} className="w-full animate-pulse" />
-              </div>
-            ) : (
-            <>
-              <Button variant="outline" onClick={() => setCropModalOpen(false)}>Cancel</Button>
-              <Button onClick={handleCrop}>
-                Save Picture
-              </Button>
-            </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <ConfirmationDialog
         open={isImportConfirmOpen}
         onOpenChange={setImportConfirmOpen}
@@ -483,39 +413,3 @@ export default function ProfilePage() {
     </>
   );
 }
-
-function getCroppedImgDataUrl(image: HTMLImageElement, crop: Crop): string {
-    const canvas = document.createElement('canvas');
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    
-    const cropX = crop.x * scaleX;
-    const cropY = crop.y * scaleY;
-    const cropWidth = crop.width * scaleX;
-    const cropHeight = crop.height * scaleY;
-  
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
-    const ctx = canvas.getContext('2d');
-  
-    if (!ctx) {
-      throw new Error('No 2d context');
-    }
-  
-    ctx.drawImage(
-      image,
-      cropX,
-      cropY,
-      cropWidth,
-      cropHeight,
-      0,
-      0,
-      cropWidth,
-      cropHeight
-    );
-  
-    // Return the image as a data URL (Base64 encoded string)
-    return canvas.toDataURL('image/jpeg', 0.95);
-}
-
-    
