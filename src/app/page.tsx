@@ -10,9 +10,9 @@ import Wishlist from '@/components/wishlist';
 import DebtTracker from '@/components/debt-tracker';
 import IncomeTracker from '@/components/income-tracker';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, query, where, runTransaction, writeBatch } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, query, where, runTransaction, writeBatch, deleteDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Login from '@/components/login';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { WelcomeDialog } from '@/components/welcome-dialog';
@@ -20,6 +20,7 @@ import { ExpenseForm } from '@/components/expense-form';
 import EWallets from '@/components/e-wallets';
 import { useToast } from '@/hooks/use-toast';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
+import { IncomeForm } from '@/components/income-form';
 
 
 export default function DashboardPage() {
@@ -222,23 +223,24 @@ export default function DashboardPage() {
             if (!walletDoc.exists()) throw new Error("Wallet not found");
             const newWalletBalance = walletDoc.data().balance - amount;
             transaction.update(walletRef, { balance: newWalletBalance });
+        } else {
+             // For cash, just create the expense, balance is calculated virtually
         }
         
         // 2. Create the corresponding expense
         const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
-        const newExpense = {
+        const newExpense: Omit<ExpenseType, 'id'| 'date' | 'userId'> = {
           name: `Contribution to: ${name}`,
           amount: amount,
           category: 'Other' as Category,
-          date: serverTimestamp(),
-          userId: user.uid,
           walletId: walletId
         };
+        addDocumentNonBlocking(collection(firestore, 'users', user.uid, 'expenses'), newExpense);
 
-        // 3. Update wishlist item, and add expense
+        // 3. Update wishlist item
         const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', id);
         transaction.set(wishlistItemRef, { savedAmount: newSavedAmount }, { merge: true });
-        transaction.set(newExpenseRef, newExpense);
+        
     }).catch(error => {
         toast({variant: 'destructive', title: 'Contribution failed', description: error.message});
     });
@@ -282,6 +284,20 @@ export default function DashboardPage() {
     await addDocumentNonBlocking(walletsQuery, newWallet);
     toast({ title: 'E-Wallet Added!', description: `${name} has been added with a balance of ₱${balance}.`});
   };
+
+  const updateWallet = async (id: string, name: string) => {
+    if (!user) return;
+    const walletRef = doc(firestore, 'users', user.uid, 'wallets', id);
+    await updateDocumentNonBlocking(walletRef, { name });
+    toast({ title: 'Wallet Updated!', description: 'The wallet name has been changed.' });
+  }
+
+  const deleteWallet = async (id: string) => {
+    if (!user) return;
+    const walletRef = doc(firestore, 'users', user.uid, 'wallets', id);
+    await deleteDocumentNonBlocking(walletRef);
+    toast({ title: 'Wallet Deleted!', description: 'The wallet has been removed.' });
+  }
 
   const updateExpense = async (expenseId: string, oldAmount: number, updatedData: Partial<ExpenseType>) => {
     if (!user) return;
@@ -348,6 +364,103 @@ export default function DashboardPage() {
         toast({ variant: 'destructive', title: 'Update failed', description: error.message });
     }
   };
+  
+    const deleteExpense = async (expense: ExpenseType) => {
+      if (!user) return;
+  
+      const expenseRef = doc(firestore, 'users', user.uid, 'expenses', expense.id);
+  
+      try {
+        await runTransaction(firestore, async (transaction) => {
+          // If it's an E-wallet transaction, we need to revert the balance
+          if (expense.walletId && expense.walletId !== CASH_ON_HAND_WALLET.id) {
+            const walletRef = doc(firestore, 'users', user.uid, 'wallets', expense.walletId);
+            const walletDoc = await transaction.get(walletRef);
+            if (walletDoc.exists()) {
+              const newBalance = walletDoc.data().balance + expense.amount;
+              transaction.update(walletRef, { balance: newBalance });
+            } else {
+              // If wallet doesn't exist, we might just log this or ignore
+              console.warn(`Wallet with id ${expense.walletId} not found for expense ${expense.id}. Balance not reverted.`);
+            }
+          }
+          // Delete the expense document
+          transaction.delete(expenseRef);
+        });
+        toast({ title: 'Expense Deleted', description: 'The transaction has been removed.' });
+      } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Deletion failed', description: error.message });
+      }
+    };
+  
+    const updateIncome = async (incomeId: string, oldAmount: number, updatedData: Partial<IncomeType>) => {
+      if (!user) return;
+  
+      const incomeRef = doc(firestore, 'users', user.uid, 'income', incomeId);
+  
+      try {
+        await runTransaction(firestore, async (transaction) => {
+            const incomeDoc = await transaction.get(incomeRef);
+            if (!incomeDoc.exists()) {
+                throw new Error("Income record not found!");
+            }
+  
+            const currentData = incomeDoc.data() as IncomeType;
+            const newWalletId = updatedData.walletId || currentData.walletId;
+            const oldWalletId = currentData.walletId;
+            const newAmount = updatedData.amount ?? oldAmount;
+            const amountDifference = newAmount - oldAmount;
+  
+            // Revert old wallet balance
+            if (oldWalletId && oldWalletId !== CASH_ON_HAND_WALLET.id) {
+                const oldWalletRef = doc(firestore, 'users', user.uid, 'wallets', oldWalletId);
+                const oldWalletDoc = await transaction.get(oldWalletRef);
+                if (oldWalletDoc.exists()) {
+                    transaction.update(oldWalletRef, { balance: oldWalletDoc.data().balance - oldAmount });
+                }
+            }
+  
+            // Apply new wallet balance
+            if (newWalletId && newWalletId !== CASH_ON_HAND_WALLET.id) {
+                const newWalletRef = doc(firestore, 'users', user.uid, 'wallets', newWalletId);
+                const newWalletDoc = await transaction.get(newWalletRef);
+                if (newWalletDoc.exists()) {
+                    transaction.update(newWalletRef, { balance: newWalletDoc.data().balance + newAmount });
+                } else {
+                     throw new Error("New wallet not found!");
+                }
+            }
+  
+            transaction.update(incomeRef, updatedData);
+        });
+        toast({ title: 'Income Updated', description: 'Your income record has been updated.' });
+      } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Update failed', description: error.message });
+      }
+    };
+  
+    const deleteIncome = async (income: IncomeType) => {
+        if (!user) return;
+    
+        const incomeRef = doc(firestore, 'users', user.uid, 'income', income.id);
+    
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                if (income.walletId && income.walletId !== CASH_ON_HAND_WALLET.id) {
+                    const walletRef = doc(firestore, 'users', user.uid, 'wallets', income.walletId);
+                    const walletDoc = await transaction.get(walletRef);
+                    if (walletDoc.exists()) {
+                        const newBalance = walletDoc.data().balance - income.amount;
+                        transaction.update(walletRef, { balance: newBalance });
+                    }
+                }
+                transaction.delete(incomeRef);
+            });
+            toast({ title: 'Income Deleted', description: 'The income record has been removed.' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Deletion failed', description: error.message });
+        }
+    };
 
 
   if (isUserLoading || walletsLoading) {
@@ -378,21 +491,29 @@ export default function DashboardPage() {
               <div className="lg:col-span-2 grid gap-4 md:gap-8">
                 <SpendingBreakdown expenses={expenses || []} />
                 <BudgetStatus expenses={expenses || []} budgetGoals={budgetGoals || []} />
-                <RecentExpenses expenses={expenses || []} onUpdateExpense={updateExpense} wallets={allWallets} />
+                <RecentExpenses 
+                  expenses={expenses || []} 
+                  onUpdateExpense={updateExpense} 
+                  onDeleteExpense={deleteExpense}
+                  wallets={allWallets} 
+                />
               </div>
 
               <div className="grid gap-4 md:gap-8 lg:col-start-3">
-                 <EWallets wallets={allWallets} addWallet={addWallet} />
+                 <EWallets 
+                    wallets={allWallets} 
+                    addWallet={addWallet} 
+                    updateWallet={updateWallet}
+                    deleteWallet={deleteWallet}
+                 />
                  
-                 <Card>
-                    <CardHeader>
-                      <CardTitle>Income</CardTitle>
-                      <CardDescription>Your recent income sources.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <IncomeTracker income={income || []} />
-                    </CardContent>
-                </Card>
+                 <IncomeTracker 
+                    income={income || []} 
+                    wallets={allWallets}
+                    onUpdateIncome={updateIncome}
+                    onDeleteIncome={deleteIncome}
+                    addIncome={addIncome}
+                  />
 
                 <Card>
                   <CardHeader>

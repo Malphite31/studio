@@ -20,33 +20,64 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import type { EWallet } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
-import { CASH_ON_HAND_WALLET } from '@/lib/data';
+import { EditDeleteButtons } from './edit-delete-buttons';
 
 interface EWalletsProps {
   wallets: EWallet[];
   addWallet: (name: string, balance: number) => void;
+  updateWallet: (id: string, name: string) => void;
+  deleteWallet: (id: string) => void;
 }
 
-const formSchema = z.object({
+const addFormSchema = z.object({
   name: z.string().min(2, { message: 'Wallet name must be at least 2 characters.' }),
   balance: z.coerce.number().min(0, { message: 'Balance must be non-negative.' }),
 });
 
+const editFormSchema = z.object({
+    name: z.string().min(2, { message: 'Wallet name must be at least 2 characters.' }),
+});
+
+
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
 
-export default function EWallets({ wallets, addWallet }: EWalletsProps) {
-  const [open, setOpen] = useState(false);
+export default function EWallets({ wallets, addWallet, updateWallet, deleteWallet }: EWalletsProps) {
+  const [isAddOpen, setAddOpen] = useState(false);
+  const [isEditOpen, setEditOpen] = useState(false);
+  const [selectedWallet, setSelectedWallet] = useState<EWallet | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const addForm = useForm<z.infer<typeof addFormSchema>>({
+    resolver: zodResolver(addFormSchema),
     defaultValues: { name: '', balance: 0 },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  const editForm = useForm<z.infer<typeof editFormSchema>>({
+    resolver: zodResolver(editFormSchema),
+  });
+
+  function onAddSubmit(values: z.infer<typeof addFormSchema>) {
     addWallet(values.name, values.balance);
-    form.reset();
-    setOpen(false);
+    addForm.reset();
+    setAddOpen(false);
+  }
+
+  function onEditSubmit(values: z.infer<typeof editFormSchema>) {
+    if (selectedWallet) {
+        updateWallet(selectedWallet.id, values.name);
+    }
+    setEditOpen(false);
+    setSelectedWallet(null);
+  }
+
+  function handleEditClick(wallet: EWallet) {
+    setSelectedWallet(wallet);
+    editForm.reset({ name: wallet.name });
+    setEditOpen(true);
+  }
+
+  function handleDeleteClick(wallet: EWallet) {
+    deleteWallet(wallet.id);
   }
   
   const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
@@ -59,15 +90,29 @@ export default function EWallets({ wallets, addWallet }: EWalletsProps) {
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-48 pr-4">
-          <div className="space-y-4">
+          <div className="space-y-2">
             {wallets.length > 0 ? (
               wallets.map((wallet) => (
-                <div key={wallet.id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/50">
+                <div key={wallet.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50 group">
                   <div className="flex items-center gap-3">
                     <Wallet className="h-5 w-5 text-primary" />
-                    <span className="font-medium">{wallet.name}</span>
+                    <div className='flex flex-col'>
+                        <span className="font-medium">{wallet.name}</span>
+                        {wallet.id !== 'cash' && 
+                          <span className='text-xs text-muted-foreground'>E-Wallet</span>
+                        }
+                    </div>
                   </div>
-                  <span className="font-semibold">{formatCurrency(wallet.balance)}</span>
+                  <div className='flex items-center gap-2'>
+                    <span className="font-semibold">{formatCurrency(wallet.balance)}</span>
+                    {wallet.id !== 'cash' && (
+                        <EditDeleteButtons
+                            onEdit={() => handleEditClick(wallet)}
+                            onDelete={() => handleDeleteClick(wallet)}
+                            deleteWarning="Are you sure you want to delete this wallet? This might affect transaction history but won't delete the transactions themselves."
+                        />
+                    )}
+                  </div>
                 </div>
               ))
             ) : (
@@ -81,7 +126,7 @@ export default function EWallets({ wallets, addWallet }: EWalletsProps) {
             <span>Total:</span>
             <span>{formatCurrency(totalBalance)}</span>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={isAddOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" className="w-full">
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -93,10 +138,10 @@ export default function EWallets({ wallets, addWallet }: EWalletsProps) {
               <DialogTitle>Add E-Wallet</DialogTitle>
               <DialogDescription>Enter the details for your new e-wallet.</DialogDescription>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <Form {...addForm}>
+              <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-4 py-4">
                 <FormField
-                  control={form.control}
+                  control={addForm.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
@@ -109,7 +154,7 @@ export default function EWallets({ wallets, addWallet }: EWalletsProps) {
                   )}
                 />
                 <FormField
-                  control={form.control}
+                  control={addForm.control}
                   name="balance"
                   render={({ field }) => (
                     <FormItem>
@@ -129,6 +174,36 @@ export default function EWallets({ wallets, addWallet }: EWalletsProps) {
           </DialogContent>
         </Dialog>
       </CardFooter>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Wallet</DialogTitle>
+            <DialogDescription>Change the name of your wallet.</DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4 py-4">
+              <FormField
+                control={editForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wallet Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., GCash" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

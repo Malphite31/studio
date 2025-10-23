@@ -15,17 +15,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import type { Expense, EWallet } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
 import { ExpenseForm } from './expense-form';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
+import { EditDeleteButtons } from './edit-delete-buttons';
 
 interface RecentExpensesProps {
   expenses: Expense[];
   onUpdateExpense: (expenseId: string, oldAmount: number, updatedData: Partial<Expense>) => void;
+  onDeleteExpense: (expense: Expense) => void;
   wallets: EWallet[];
 }
 
@@ -33,7 +34,7 @@ const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
 
 
-export default function RecentExpenses({ expenses, onUpdateExpense, wallets }: RecentExpensesProps) {
+export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpense, wallets }: RecentExpensesProps) {
   const sortedExpenses = [...expenses].sort((a, b) => {
       const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
       const dateB = b.date instanceof Timestamp ? b.date.toDate() : b.date;
@@ -58,7 +59,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, wallets }: R
             <TableRow>
               <TableHead>Expense</TableHead>
               <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -85,12 +86,18 @@ export default function RecentExpenses({ expenses, onUpdateExpense, wallets }: R
                       -{formatCurrency(expense.amount)}
                     </TableCell>
                     <TableCell className="text-right">
-                       <ExpenseForm
-                          triggerType="edit"
-                          wallets={allWallets}
-                          expenseToEdit={expense}
-                          onUpdate={onUpdateExpense}
-                        />
+                       <EditDeleteButtons
+                            onEdit={() => {}} // The form itself is the edit button
+                            onDelete={() => onDeleteExpense(expense)}
+                            deleteWarning="Are you sure you want to delete this expense? This will revert the amount from the associated wallet."
+                        >
+                            <ExpenseForm
+                                triggerType="edit"
+                                wallets={allWallets}
+                                expenseToEdit={expense}
+                                onUpdate={onUpdateExpense}
+                            />
+                        </EditDeleteButtons>
                     </TableCell>
                   </TableRow>
                 );

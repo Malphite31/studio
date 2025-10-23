@@ -2,8 +2,7 @@
 
 import { format, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
-import { Landmark, TrendingUp } from 'lucide-react';
-import type { Income } from '@/lib/types';
+import type { Income, EWallet } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -21,16 +20,24 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { EditDeleteButtons } from './edit-delete-buttons';
+import { IncomeForm } from './income-form';
+import { PlusCircle } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface IncomeTrackerProps {
   income: Income[];
+  wallets: EWallet[];
+  onUpdateIncome: (incomeId: string, oldAmount: number, updatedData: Partial<Income>) => void;
+  onDeleteIncome: (income: Income) => void;
+  addIncome: (income: Omit<Income, 'id'| 'date' | 'userId'>) => void;
 }
 
 const formatCurrency = (amount: number) => 
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
 
 
-export default function IncomeTracker({ income }: IncomeTrackerProps) {
+export default function IncomeTracker({ income, wallets, onUpdateIncome, onDeleteIncome, addIncome }: IncomeTrackerProps) {
   const sortedIncome = [...income].sort((a, b) => {
     const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
     const dateB = b.date instanceof Timestamp ? b.date.toDate() : b.date;
@@ -41,48 +48,73 @@ export default function IncomeTracker({ income }: IncomeTrackerProps) {
   const totalIncome = sortedIncome.reduce((acc, item) => acc + item.amount, 0);
 
   return (
-    <>
-      <ScrollArea className="h-64">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className='p-2'>Source</TableHead>
-              <TableHead className="text-right p-2">Amount</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedIncome.length > 0 ? (
-              sortedIncome.map((item) => {
-                const incomeDate = item.date instanceof Timestamp ? item.date.toDate() : item.date;
-                return (
-                  <TableRow key={item.id}>
-                    <TableCell className='p-2'>
-                        <div className="font-medium text-sm">{item.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                            {isValid(incomeDate) ? format(incomeDate, 'MMM d, yyyy') : 'Processing...'}
-                        </div>
-                    </TableCell>
-                    <TableCell className="text-right font-medium text-green-600 p-2">
-                      +{formatCurrency(item.amount)}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            ) : (
+    <Card>
+      <CardHeader>
+        <CardTitle>Income</CardTitle>
+        <CardDescription>Your recent income sources.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-64 pr-4">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={2} className="text-center py-8 text-sm">
-                  No income recorded yet.
-                </TableCell>
+                <TableHead className='p-2'>Source</TableHead>
+                <TableHead className="text-right p-2">Amount</TableHead>
+                <TableHead className="text-right p-2">Actions</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </ScrollArea>
-      <div className="flex justify-end font-bold text-md mt-4 pr-2">
-        <div className="flex items-center gap-2">
-            <span>Total: {formatCurrency(totalIncome)}</span>
+            </TableHeader>
+            <TableBody>
+              {sortedIncome.length > 0 ? (
+                sortedIncome.map((item) => {
+                  const incomeDate = item.date instanceof Timestamp ? item.date.toDate() : item.date;
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className='p-2'>
+                          <div className="font-medium text-sm">{item.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                              {isValid(incomeDate) ? format(incomeDate, 'MMM d, yyyy') : 'Processing...'}
+                          </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium text-green-600 p-2">
+                        +{formatCurrency(item.amount)}
+                      </TableCell>
+                      <TableCell className='p-2 text-right'>
+                        <EditDeleteButtons
+                          onEdit={() => {}}
+                          onDelete={() => onDeleteIncome(item)}
+                          deleteWarning="Are you sure you want to delete this income record?"
+                        >
+                          <IncomeForm
+                            triggerType="edit"
+                            wallets={wallets}
+                            incomeToEdit={item}
+                            onUpdate={onUpdateIncome}
+                           />
+                        </EditDeleteButtons>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-sm">
+                    No income recorded yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </CardContent>
+      <CardFooter className="flex-col items-stretch gap-4">
+        <div className="flex justify-between items-center font-bold text-md border-t pt-4">
+            <span>Total Income:</span>
+            <span>{formatCurrency(totalIncome)}</span>
         </div>
-      </div>
-    </>
+         <IncomeForm triggerType='button' wallets={wallets} addIncome={addIncome}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Income
+        </IncomeForm>
+      </CardFooter>
+    </Card>
   );
 }

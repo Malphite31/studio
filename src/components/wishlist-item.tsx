@@ -59,10 +59,22 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    contributeToWishlist(item, values.amount, values.walletId);
+    const amountToContribute = values.amount;
+    const availableBalance = allWallets.find(w => w.id === values.walletId)?.balance ?? 0;
+    
+    if (values.walletId !== CASH_ON_HAND_WALLET.id && amountToContribute > availableBalance) {
+        toast({
+            variant: 'destructive',
+            title: "Insufficient funds!",
+            description: `Your balance in ${allWallets.find(w => w.id === values.walletId)?.name} is not enough for this contribution.`
+        })
+        return;
+    }
+    
+    contributeToWishlist(item, amountToContribute, values.walletId);
     toast({
         title: "Contribution added!",
-        description: `You added ${formatCurrency(values.amount)} to ${item.name}. Your balance has been updated.`,
+        description: `You added ${formatCurrency(amountToContribute)} to ${item.name}.`,
     });
     form.reset({ amount: 10, walletId: form.getValues('walletId')});
   }
@@ -150,7 +162,7 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
           <AlertDialogDescription>
-            This will record the purchase of your {item.name}. If there's a remaining balance, it will be added as a final expense. This action cannot be undone.
+            This will mark "{item.name}" as purchased and record a final expense if there's a remaining balance. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
