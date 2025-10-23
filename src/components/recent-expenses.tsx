@@ -20,7 +20,7 @@ import { format, isValid } from 'date-fns';
 import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
 import { ExpenseForm } from './expense-form';
-import { MoreVertical, Pencil, Trash2, Printer } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import {
@@ -34,14 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useState, useRef } from 'react';
-import { cn } from '@/lib/utils';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import TransactionReport from './transaction-report';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc } from 'firebase/firestore';
+import { useState } from 'react';
 
 
 interface RecentExpensesProps {
@@ -58,12 +51,6 @@ const formatCurrency = (amount: number) =>
 export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpense, wallets }: RecentExpensesProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
-  const { user } = useUser();
-  const firestore = useFirestore();
-
-  const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
-  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   const sortedExpenses = [...expenses].sort((a, b) => {
       const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
@@ -79,46 +66,17 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
     setIsEditOpen(true);
   };
   
-  const handlePrint = async () => {
-    const reportElement = printRef.current;
-    if (!reportElement) return;
-
-    const canvas = await html2canvas(reportElement, { scale: 2, useCORS: true });
-    const imgData = canvas.toDataURL('image/png');
-    
-    const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: 'a4'
-    });
-    
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    const ratio = canvasWidth / canvasHeight;
-    const widthInPdf = pdfWidth;
-    const heightInPdf = widthInPdf / ratio;
-
-    pdf.addImage(imgData, 'PNG', 0, 0, widthInPdf, heightInPdf);
-    pdf.save('SpendWise-Report.pdf');
-  }
-
 
   return (
     <>
     <Card>
-      <CardHeader className='flex-row items-center justify-between'>
+      <CardHeader>
         <div>
           <CardTitle>Recent Transactions</CardTitle>
           <CardDescription>
             Here are your 10 most recent expenses.
           </CardDescription>
         </div>
-        <Button variant="outline" size="icon" onClick={handlePrint} className='no-print'>
-            <Printer className="h-4 w-4" />
-            <span className="sr-only">Print</span>
-        </Button>
       </CardHeader>
       <CardContent>
         <Table>
@@ -126,7 +84,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
             <TableRow>
               <TableHead>Expense</TableHead>
               <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right no-print">Actions</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -138,7 +96,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                   <TableRow key={expense.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <span className="flex items-center justify-center w-8 h-8 bg-secondary rounded-full no-print">
+                        <span className="flex items-center justify-center w-8 h-8 bg-secondary rounded-full">
                           <Icon className="h-4 w-4 text-muted-foreground" />
                         </span>
                         <div>
@@ -153,7 +111,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                     <TableCell className="text-right font-medium">
                       -{formatCurrency(expense.amount)}
                     </TableCell>
-                    <TableCell className="text-right no-print">
+                    <TableCell className="text-right">
                        <AlertDialog>
                           <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -218,11 +176,6 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
             onUpdate={onUpdateExpense}
         />
      )}
-    <div className='hidden'>
-        <div ref={printRef}>
-            <TransactionReport expenses={recentExpenses} user={userProfile} />
-        </div>
-    </div>
     </>
   );
 }
