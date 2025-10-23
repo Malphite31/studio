@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ExpenseForm } from './expense-form';
 import { BudgetForm } from './budget-form';
 import { ThemeSwitcher } from './theme-switcher';
-import type { Expense, BudgetGoal, Category, Iou } from '@/lib/types';
+import type { Expense, BudgetGoal, Category, Iou, UserProfile } from '@/lib/types';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useDoc } from '@/firebase/firestore/use-doc';
@@ -29,8 +29,8 @@ import { useFirestore } from '@/firebase/provider';
 import { useMemoFirebase } from '@/firebase/provider';
 
 interface DashboardHeaderProps {
-  addExpense: (expense: Omit<Expense, 'id' | 'date'>) => void;
-  addIou: (iou: Omit<Iou, 'id' | 'paid'>) => void;
+  addExpense: (expense: Omit<Expense, 'id' | 'date' | 'userId'>) => void;
+  addIou: (iou: Omit<Iou, 'id' | 'paid' | 'userId'>) => void;
   budgetGoals: BudgetGoal[];
   updateBudgets: (updatedGoals: Record<Category, number>) => void;
 }
@@ -46,7 +46,7 @@ export default function DashboardHeader({
   const firestore = useFirestore();
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
-  const { data: userProfile } = useDoc(userProfileRef);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   const handleLogout = () => {
     signOut(auth);

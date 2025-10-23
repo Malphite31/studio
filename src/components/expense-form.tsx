@@ -61,8 +61,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface ExpenseFormProps {
-  addExpense: (expense: Omit<Expense, 'id' | 'date'>) => void;
-  addIou: (iou: Omit<Iou, 'id' | 'paid'>) => void;
+  addExpense: (expense: Omit<Expense, 'id' | 'date' | 'userId'>) => void;
+  addIou: (iou: Omit<Iou, 'id' | 'paid' | 'userId'>) => void;
 }
 
 export function ExpenseForm({ addExpense, addIou }: ExpenseFormProps) {
@@ -94,7 +94,7 @@ export function ExpenseForm({ addExpense, addIou }: ExpenseFormProps) {
         description: `Your ${values.category.toLowerCase()} transaction has been recorded.`,
       })
     } else {
-      const expenseData: Omit<Expense, 'id'| 'date'> = {
+      const expenseData: Omit<Expense, 'id'| 'date' | 'userId'> = {
         name: values.name,
         amount: values.amount,
         category: values.category,

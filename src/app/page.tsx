@@ -48,12 +48,14 @@ export default function DashboardPage() {
 
   const budgetGoals: BudgetGoal[] = useMemo(() => {
     return budgetGoalsData?.map(goal => ({
+      id: goal.id,
       category: goal.category,
-      amount: goal.amount
+      amount: goal.amount,
+      userId: user!.uid,
     })) || [];
-  }, [budgetGoalsData]);
+  }, [budgetGoalsData, user]);
 
-  const addExpense = (expense: Omit<ExpenseType, 'id' | 'date'>) => {
+  const addExpense = (expense: Omit<ExpenseType, 'id' | 'date' | 'userId'>) => {
     if (!user || !expensesQuery) return;
     const newExpense = {
       ...expense,
@@ -63,9 +65,9 @@ export default function DashboardPage() {
     addDocumentNonBlocking(expensesQuery, newExpense);
   };
   
-  const addIou = (iou: Omit<IouType, 'id' | 'paid'>) => {
+  const addIou = (iou: Omit<IouType, 'id' | 'paid' | 'userId'>) => {
     if (!user || !iousQuery) return;
-    const newIou = {
+    const newIou: Omit<IouType, 'id'> = {
       ...iou,
       paid: false,
       userId: user.uid,
@@ -81,9 +83,9 @@ export default function DashboardPage() {
     });
   };
   
-  const addWishlistItem = (item: Omit<WishlistItemType, 'id' | 'savedAmount'>) => {
+  const addWishlistItem = (item: Omit<WishlistItemType, 'id' | 'savedAmount' | 'userId'>) => {
     if (!user || !wishlistQuery) return;
-    const newWishlistItem = {
+    const newWishlistItem: Omit<WishlistItemType, 'id'> = {
       ...item,
       savedAmount: 0,
       userId: user.uid,
