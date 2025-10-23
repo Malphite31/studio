@@ -95,13 +95,12 @@ export function ExpenseForm({
 
   const isEditMode = !!expenseToEdit;
 
-  const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
   });
 
   useEffect(() => {
+    const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
     if (isEditMode && expenseToEdit) {
       form.reset({
         name: expenseToEdit.name,
@@ -118,7 +117,7 @@ export function ExpenseForm({
             walletId: allWallets.length > 0 ? allWallets[0].id : undefined,
         });
     }
-  }, [expenseToEdit, isEditMode, form, open, allWallets]);
+  }, [expenseToEdit, isEditMode, form, open]);
   
   const category = form.watch('category');
 
@@ -179,6 +178,8 @@ export function ExpenseForm({
     if (!isEditMode) form.reset();
     setOpen(false);
   }
+  
+  const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
   
   const TriggerButton = 
     triggerType === 'fab' ? (
