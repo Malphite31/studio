@@ -228,124 +228,29 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profile information. The userId is the Firebase Auth UID.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/expenses/{expenseId}",
-        "definition": {
-          "entityName": "Expense",
-          "schema": {
-            "$ref": "#/backend/entities/Expense"
-          },
-          "description": "Stores expense data for a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user."
-            },
-            {
-              "name": "expenseId",
-              "description": "The unique identifier for the expense."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/categories/{categoryId}",
-        "definition": {
-          "entityName": "Category",
-          "schema": {
-            "$ref": "#/backend/entities/Category"
-          },
-          "description": "Stores expense categories created by a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user."
-            },
-            {
-              "name": "categoryId",
-              "description": "The unique identifier for the category."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/budgets/{budgetId}",
-        "definition": {
-          "entityName": "Budget",
-          "schema": {
-            "$ref": "#/backend/entities/Budget"
-          },
-          "description": "Stores budget information for a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user."
-            },
-            {
-              "name": "budgetId",
-              "description": "The unique identifier for the budget."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/wishlist/{wishlistId}",
-        "definition": {
-          "entityName": "WishlistItem",
-          "schema": {
-            "$ref": "#/backend/entities/WishlistItem"
-          },
-          "description": "Stores wishlist items for a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user."
-            },
-            {
-              "name": "wishlistId",
-              "description": "The unique identifier for the wishlist item."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/ious/{iouId}",
-        "definition": {
-          "entityName": "Iou",
-          "schema": {
-            "$ref": "#/backend/entities/Iou"
-          },
-          "description": "Stores IOUs for a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user."
-            },
-            {
-              "name": "iouId",
-              "description": "The unique identifier for the IOU."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the SpendWise application. It leverages path-based ownership for user-specific data (expenses, categories, budgets, wishlist, ious) stored under the `/users/{userId}` collection. This approach avoids hierarchical authorization dependencies and simplifies security rules. The `UserProfile` data is stored directly in the `/users/{userId}` document. This structure directly supports QAPs by ensuring that `list` operations on expenses, categories, budgets, wishlist and ious are always scoped to a specific user, preventing unauthorized access to other users' data. Authorization independence is achieved by storing user-related data under their respective user IDs, eliminating the need for `get()` calls in security rules to verify ownership."
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user profile information. The userId is the Firebase Auth UID."
+    },
+    "/users/{userId}/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Stores expense data for a specific user."
+    },
+    "/users/{userId}/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Stores expense categories created by a specific user."
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": "Budget",
+      "description": "Stores budget information for a specific user."
+    },
+    "/users/{userId}/wishlist/{wishlistId}": {
+      "schema": "WishlistItem",
+      "description": "Stores wishlist items for a specific user."
+    },
+    "/users/{userId}/ious/{iouId}": {
+      "schema": "Iou",
+      "description": "Stores IOUs for a specific user."
+    }
   }
 }
