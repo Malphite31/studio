@@ -30,11 +30,26 @@ const themes = [
 ]
 
 export function ThemeSwitcher() {
-  const { setTheme, theme } = useTheme();
+  const { setTheme } = useTheme();
 
-  const handleThemeChange = (newTheme: string) => {
-    setTheme(newTheme);
+  const handleColorChange = (color: string) => {
+    const colorThemes = themes.map(t => t.value);
+    document.body.classList.forEach(className => {
+        if (colorThemes.includes(className)) {
+            document.body.classList.remove(className);
+        }
+    });
+    document.body.classList.add(color);
   };
+  
+  React.useEffect(() => {
+    // Set a default theme class if none is present
+    const colorThemes = themes.map(t => t.value);
+    const hasColorTheme = Array.from(document.body.classList).some(c => colorThemes.includes(c));
+    if (!hasColorTheme) {
+        document.body.classList.add('theme-violet');
+    }
+  }, []);
 
   return (
     <DropdownMenu>
@@ -46,13 +61,13 @@ export function ThemeSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleThemeChange('light')}>
+        <DropdownMenuItem onClick={() => setTheme('light')}>
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleThemeChange('dark')}>
+        <DropdownMenuItem onClick={() => setTheme('dark')}>
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleThemeChange('system')}>
+        <DropdownMenuItem onClick={() => setTheme('system')}>
           System
         </DropdownMenuItem>
         <DropdownMenuSub>
@@ -65,7 +80,7 @@ export function ThemeSwitcher() {
               {themes.map((colorTheme) => (
                 <DropdownMenuItem
                   key={colorTheme.value}
-                  onClick={() => handleThemeChange(colorTheme.value)}
+                  onClick={() => handleColorChange(colorTheme.value)}
                 >
                   {colorTheme.name}
                 </DropdownMenuItem>
