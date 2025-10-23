@@ -1,120 +1,29 @@
-/**
- * @fileoverview Firestore Security Rules for SpendWise application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for all data. Each user can only
- * access their own profile and associated expenses, categories, and budgets.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profile information.
- * - /users/{userId}/expenses/{expenseId}: Stores expense data for a specific user.
- * - /users/{userId}/categories/{categoryId}: Stores expense categories created by a specific user.
- * - /users/{userId}/budgets/{budgetId}: Stores budget information for a specific user.
- *
- * Key Security Decisions:
- * - Users can only create, read, update, and delete their own data.
- * - Listing other users' data is strictly prohibited.
- * - Data is denormalized such that authorization checks do not require `get()` calls.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Controls access to user profile information.
-     * @path /users/{userId}
-     * @allow (create) - User with UID 'user_abc' can create their profile if request.auth.uid == 'user_abc'.
-     * @allow (get) - User with UID 'user_abc' can read their profile if request.auth.uid == 'user_abc'.
-     * @allow (update) - User with UID 'user_abc' can update their profile if request.auth.uid == 'user_abc'.
-     * @allow (delete) - User with UID 'user_abc' can delete their profile if request.auth.uid == 'user_abc'.
-     * @deny (create) - User with UID 'user_xyz' cannot create a profile for 'user_abc'.
-     * @deny (get) - User with UID 'user_xyz' cannot read the profile of 'user_abc'.
-     * @deny (update) - User with UID 'user_xyz' cannot update the profile of 'user_abc'.
-     * @deny (delete) - User with UID 'user_xyz' cannot delete the profile of 'user_abc'.
-     * @principle Enforces document ownership for all operations on user profiles.
-     */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /expenses/{expenseId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
       }
 
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && resource.data.id == request.resource.data.id;
-      allow delete: if isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Controls access to expense data for a specific user.
-     * @path /users/{userId}/expenses/{expenseId}
-     * @allow (create) - User with UID 'user_abc' can create an expense if request.auth.uid == 'user_abc'.
-     * @allow (get) - User with UID 'user_abc' can read an expense if request.auth.uid == 'user_abc'.
-     * @allow (update) - User with UID 'user_abc' can update an expense if request.auth.uid == 'user_abc'.
-     * @allow (delete) - User with UID 'user_abc' can delete an expense if request.auth.uid == 'user_abc'.
-     * @deny (create) - User with UID 'user_xyz' cannot create an expense for 'user_abc'.
-     * @deny (get) - User with UID 'user_xyz' cannot read an expense of 'user_abc'.
-     * @deny (update) - User with UID 'user_xyz' cannot update an expense of 'user_abc'.
-     * @deny (delete) - User with UID 'user_xyz' cannot delete an expense of 'user_abc'.
-     * @principle Enforces document ownership for all operations on expenses.
-     */
-    match /users/{userId}/expenses/{expenseId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+      match /categories/{categoryId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
       }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isOwner(userId) && resource != null && resource.data.userId == request.resource.data.userId;
-      allow delete: if isOwner(userId) && resource != null;
-    }
 
-    /**
-     * @description Controls access to category data for a specific user.
-     * @path /users/{userId}/categories/{categoryId}
-     * @allow (create) - User with UID 'user_abc' can create a category if request.auth.uid == 'user_abc'.
-     * @allow (get) - User with UID 'user_abc' can read a category if request.auth.uid == 'user_abc'.
-     * @allow (update) - User with UID 'user_abc' can update a category if request.auth.uid == 'user_abc'.
-     * @allow (delete) - User with UID 'user_abc' can delete a category if request.auth.uid == 'user_abc'.
-     * @deny (create) - User with UID 'user_xyz' cannot create a category for 'user_abc'.
-     * @deny (get) - User with UID 'user_xyz' cannot read a category of 'user_abc'.
-     * @deny (update) - User with UID 'user_xyz' cannot update a category of 'user_abc'.
-     * @deny (delete) - User with UID 'user_xyz' cannot delete a category of 'user_abc'.
-     * @principle Enforces document ownership for all operations on categories.
-     */
-    match /users/{userId}/categories/{categoryId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+      match /budgets/{budgetId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
       }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isOwner(userId) && resource != null && resource.data.userId == request.resource.data.userId;
-      allow delete: if isOwner(userId) && resource != null;
-    }
 
-    /**
-     * @description Controls access to budget data for a specific user.
-     * @path /users/{userId}/budgets/{budgetId}
-     * @allow (create) - User with UID 'user_abc' can create a budget if request.auth.uid == 'user_abc'.
-     * @allow (get) - User with UID 'user_abc' can read a budget if request.auth.uid == 'user_abc'.
-     * @allow (update) - User with UID 'user_abc' can update a budget if request.auth.uid == 'user_abc'.
-     * @allow (delete) - User with UID 'user_abc' can delete a budget if request.auth.uid == 'user_abc'.
-     * @deny (create) - User with UID 'user_xyz' cannot create a budget for 'user_abc'.
-     * @deny (get) - User with UID 'user_xyz' cannot read a budget of 'user_abc'.
-     * @deny (update) - User with UID 'user_xyz' cannot update a budget of 'user_abc'.
-     * @deny (delete) - User with UID 'user_xyz' cannot delete a budget of 'user_abc'.
-     * @principle Enforces document ownership for all operations on budgets.
-     */
-    match /users/{userId}/budgets/{budgetId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+      match /wishlist/{wishlistId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
       }
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isOwner(userId) && resource != null && resource.data.userId == request.resource.data.userId;
-      allow delete: if isOwner(userId) && resource != null;
+
+      match /ious/{iouId} {
+        allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
   }
 }
