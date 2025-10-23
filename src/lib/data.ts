@@ -7,6 +7,8 @@ export const CATEGORIES = [
   'Housing',
   'Utilities',
   'Bills',
+  'Borrow',
+  'Lent',
   'Other',
 ] as const;
 
@@ -17,6 +19,8 @@ export const CATEGORY_COLORS: Record<Category, string> = {
     Housing: 'hsl(var(--chart-4))',
     Utilities: 'hsl(var(--chart-5))',
     Bills: 'hsl(var(--chart-1))', // Reusing a color for now
+    Borrow: 'hsl(var(--chart-2))',
+    Lent: 'hsl(var(--chart-3))',
     Other: 'hsl(var(--muted))',
 };
 
@@ -72,6 +76,8 @@ export const initialBudgetGoals: BudgetGoal[] = [
   { category: 'Housing', amount: 1500 },
   { category: 'Utilities', amount: 150 },
   { category: 'Bills', amount: 250 },
+  { category: 'Borrow', amount: 0 },
+  { category: 'Lent', amount: 0 },
   { category: 'Other', amount: 100 },
 ];
 
