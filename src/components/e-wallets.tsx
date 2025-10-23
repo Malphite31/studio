@@ -98,9 +98,9 @@ export default function EWallets({ wallets, addWallet, updateWallet, deleteWalle
                   <Wallet className="h-5 w-5 text-primary" />
                   <div className='flex flex-col'>
                       <span className="font-medium">{wallet.name}</span>
-                      {wallet.id !== 'cash' && 
-                        <span className='text-xs text-muted-foreground'>E-Wallet</span>
-                      }
+                      <span className='text-xs text-muted-foreground'>
+                        {wallet.id !== 'cash' ? 'E-Wallet' : '\u00A0' /* Non-breaking space for alignment */}
+                      </span>
                   </div>
                 </div>
                 <div className='flex items-center gap-2'>
