@@ -134,6 +134,91 @@
         "month",
         "amount"
       ]
+    },
+    "WishlistItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WishlistItem",
+      "type": "object",
+      "description": "Represents an item in the user's wishlist.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the WishlistItem."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the wishlist item."
+        },
+        "targetAmount": {
+          "type": "number",
+          "description": "The target savings amount for the item."
+        },
+        "savedAmount": {
+          "type": "number",
+          "description": "The amount saved so far for the item."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this wishlist item."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "targetAmount",
+        "savedAmount",
+        "userId"
+      ]
+    },
+    "Iou": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Iou",
+      "type": "object",
+      "description": "Represents a debt or loan.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Iou."
+        },
+        "name": {
+          "type": "string",
+          "description": "A description of the Iou."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the Iou."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Borrow",
+            "Lent"
+          ],
+          "description": "The type of Iou."
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The due date of the Iou."
+        },
+        "paid": {
+          "type": "boolean",
+          "description": "Whether the Iou has been paid."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this Iou."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "amount",
+        "type",
+        "dueDate",
+        "paid",
+        "userId"
+      ]
     }
   },
   "auth": {
@@ -219,8 +304,48 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}/wishlist/{wishlistId}",
+        "definition": {
+          "entityName": "WishlistItem",
+          "schema": {
+            "$ref": "#/backend/entities/WishlistItem"
+          },
+          "description": "Stores wishlist items for a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "wishlistId",
+              "description": "The unique identifier for the wishlist item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/ious/{iouId}",
+        "definition": {
+          "entityName": "Iou",
+          "schema": {
+            "$ref": "#/backend/entities/Iou"
+          },
+          "description": "Stores IOUs for a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "iouId",
+              "description": "The unique identifier for the IOU."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the SpendWise application. It leverages path-based ownership for user-specific data (expenses, categories, budgets) stored under the `/users/{userId}` collection. This approach avoids hierarchical authorization dependencies and simplifies security rules. The `UserProfile` data is stored directly in the `/users/{userId}` document. This structure directly supports QAPs by ensuring that `list` operations on expenses, categories, and budgets are always scoped to a specific user, preventing unauthorized access to other users' data. Authorization independence is achieved by storing user-related data under their respective user IDs, eliminating the need for `get()` calls in security rules to verify ownership."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the SpendWise application. It leverages path-based ownership for user-specific data (expenses, categories, budgets, wishlist, ious) stored under the `/users/{userId}` collection. This approach avoids hierarchical authorization dependencies and simplifies security rules. The `UserProfile` data is stored directly in the `/users/{userId}` document. This structure directly supports QAPs by ensuring that `list` operations on expenses, categories, budgets, wishlist and ious are always scoped to a specific user, preventing unauthorized access to other users' data. Authorization independence is achieved by storing user-related data under their respective user IDs, eliminating the need for `get()` calls in security rules to verify ownership."
   }
 }
