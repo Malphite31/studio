@@ -67,9 +67,15 @@ export default function DashboardHeader({
 
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-white/10 bg-background/50 backdrop-blur-lg px-4 md:px-6 z-30">
-        <div className="flex items-center gap-2 font-semibold">
+        <div className="flex items-center gap-4 font-semibold">
           <Coins className="h-6 w-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full p-0.5" />
           <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>SpendWise</span>
+           {userProfile?.username && (
+              <div className='hidden md:block'>
+                  <span className='text-muted-foreground font-normal'>|</span>
+                  <span className='ml-4 font-normal'>Welcome back, {userProfile.username}!</span>
+              </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4 ml-auto">
