@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 240 5% 96%;
+    --background: 240 5% 93%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -66,8 +66,7 @@
     @apply border-border;
   }
   body {
-    background: radial-gradient(circle, hsl(var(--primary)), hsl(35 91% 55%));
-    @apply text-foreground;
+    @apply bg-background text-foreground;
     min-height: 100vh;
     background-attachment: fixed;
   }
