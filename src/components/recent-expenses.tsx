@@ -20,7 +20,6 @@ import { format, isValid } from 'date-fns';
 import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
 import { ExpenseForm } from './expense-form';
-import { CASH_ON_HAND_WALLET } from '@/lib/data';
 import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
@@ -60,7 +59,6 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
   });
   
   const recentExpenses = sortedExpenses.slice(0, 10);
-  const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
   
   const handleEditClick = (expense: Expense) => {
     setSelectedExpense(expense);
@@ -123,7 +121,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                                       Edit
                                   </DropdownMenuItem>
                                   <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem className="text-destructive">
+                                      <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
                                           <Trash2 className="mr-2 h-4 w-4" />
                                           Delete
                                       </DropdownMenuItem>
@@ -169,7 +167,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
             triggerType='dialog'
             open={isEditOpen}
             onOpenChange={setIsEditOpen}
-            wallets={allWallets}
+            wallets={wallets}
             expenseToEdit={selectedExpense}
             onUpdate={onUpdateExpense}
         />

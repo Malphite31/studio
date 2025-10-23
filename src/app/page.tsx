@@ -20,7 +20,6 @@ import { ExpenseForm } from '@/components/expense-form';
 import EWallets from '@/components/e-wallets';
 import { useToast } from '@/hooks/use-toast';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
-import { IncomeForm } from '@/components/income-form';
 
 
 export default function DashboardPage() {
@@ -31,10 +30,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user && user.metadata.creationTime === user.metadata.lastSignInTime) {
-      // It's the user's first sign-in session
       const timer = setTimeout(() => {
         setShowWelcome(true);
-      }, 1000); // Delay slightly to not be too abrupt
+      }, 1000); 
       return () => clearTimeout(timer);
     }
   }, [user]);
@@ -80,12 +78,16 @@ export default function DashboardPage() {
     const incomeTotal = income?.reduce((sum, i) => sum + i.amount, 0) || 0;
     const expenseTotal = expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
     const lentTotal = ious?.filter(iou => iou.type === 'Lent' && !iou.paid).reduce((sum, iou) => sum + iou.amount, 0) || 0;
-    const cashOnHand = incomeTotal - expenseTotal - lentTotal;
+    
+    // Virtual Cash On Hand is all non-e-wallet income minus non-e-wallet expenses
+    const cashIncome = income?.filter(i => i.walletId === CASH_ON_HAND_WALLET.id).reduce((sum, i) => sum + i.amount, 0) || 0;
+    const cashExpenses = expenses?.filter(e => e.walletId === CASH_ON_HAND_WALLET.id).reduce((sum, e) => sum + e.amount, 0) || 0;
+    const cashOnHand = cashIncome - cashExpenses;
 
     const walletTotal = wallets?.reduce((sum, wallet) => sum + wallet.balance, 0) || 0;
     const borrowedTotal = ious?.filter(iou => iou.type === 'Borrow' && !iou.paid).reduce((sum, iou) => sum + iou.amount, 0) || 0;
     
-    CASH_ON_HAND_WALLET.balance = cashOnHand; // Update the client-side object
+    CASH_ON_HAND_WALLET.balance = cashOnHand;
     
     return walletTotal + cashOnHand + borrowedTotal;
   }, [wallets, ious, income, expenses]);
@@ -103,14 +105,14 @@ export default function DashboardPage() {
   const addExpense = async (expense: Omit<ExpenseType, 'id' | 'date' | 'userId'>) => {
     if (!user || !expensesQuery || !expense.walletId) return;
 
-    // Handle cash transactions on the client-side
+    const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
+    const newExpenseData = {
+        ...expense,
+        date: serverTimestamp(),
+        userId: user.uid,
+    };
+
     if (expense.walletId === CASH_ON_HAND_WALLET.id) {
-        const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
-        const newExpenseData = {
-            ...expense,
-            date: serverTimestamp(),
-            userId: user.uid,
-        };
         setDocumentNonBlocking(newExpenseRef, newExpenseData, {});
         return;
     }
@@ -125,13 +127,6 @@ export default function DashboardPage() {
 
             const newBalance = walletDoc.data().balance - expense.amount;
             transaction.update(walletRef, { balance: newBalance });
-
-            const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
-            const newExpenseData = {
-                ...expense,
-                date: serverTimestamp(),
-                userId: user.uid,
-            };
             transaction.set(newExpenseRef, newExpenseData);
         });
     } catch (e: any) {
@@ -152,14 +147,14 @@ export default function DashboardPage() {
   const addIncome = async (incomeData: Omit<IncomeType, 'id' | 'date' | 'userId'>) => {
     if (!user || !incomeData.walletId) return;
 
-    // Handle cash transactions on the client-side
+    const newIncomeRef = doc(collection(firestore, 'users', user.uid, 'income'));
+    const newIncomeData = {
+        ...incomeData,
+        date: serverTimestamp(),
+        userId: user.uid,
+    };
+
     if (incomeData.walletId === CASH_ON_HAND_WALLET.id) {
-        const newIncomeRef = doc(collection(firestore, 'users', user.uid, 'income'));
-        const newIncomeData = {
-            ...incomeData,
-            date: serverTimestamp(),
-            userId: user.uid,
-        };
         setDocumentNonBlocking(newIncomeRef, newIncomeData, {});
         return;
     }
@@ -175,13 +170,6 @@ export default function DashboardPage() {
 
             const newBalance = walletDoc.data().balance + incomeData.amount;
             transaction.update(walletRef, { balance: newBalance });
-            
-            const newIncomeRef = doc(collection(firestore, 'users', user.uid, 'income'));
-            const newIncomeData = {
-                ...incomeData,
-                date: serverTimestamp(),
-                userId: user.uid,
-            };
             transaction.set(newIncomeRef, newIncomeData);
         });
     } catch (e: any) {
@@ -197,7 +185,7 @@ export default function DashboardPage() {
     });
   };
   
-  const addWishlistItem = (item: Omit<WishlistItemType, 'id' | 'savedAmount' | 'userId'>) => {
+  const addWishlistItem = (item: Omit<WishlistItemType, 'id' | 'savedAmount' | 'userId' | 'purchased'>) => {
     if (!user || !wishlistQuery) return;
     const newWishlistItem: Omit<WishlistItemType, 'id'> = {
       ...item,
@@ -214,31 +202,26 @@ export default function DashboardPage() {
     
     const newSavedAmount = Math.min(savedAmount + amount, targetAmount);
 
-    // This is now an atomic operation
     runTransaction(firestore, async (transaction) => {
-        // Only run wallet transaction if not cash
+        const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', id);
+        const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
+        
+        const newExpenseData: Omit<ExpenseType, 'id' | 'userId' | 'date'> = {
+            name: `Contribution to: ${name}`,
+            amount: amount,
+            category: 'Other' as Category,
+            walletId: walletId
+        };
+        
         if (walletId !== CASH_ON_HAND_WALLET.id) {
             const walletRef = doc(firestore, 'users', user.uid, 'wallets', walletId);
             const walletDoc = await transaction.get(walletRef);
             if (!walletDoc.exists()) throw new Error("Wallet not found");
             const newWalletBalance = walletDoc.data().balance - amount;
             transaction.update(walletRef, { balance: newWalletBalance });
-        } else {
-             // For cash, just create the expense, balance is calculated virtually
         }
         
-        // 2. Create the corresponding expense
-        const newExpenseRef = doc(collection(firestore, 'users', user.uid, 'expenses'));
-        const newExpense: Omit<ExpenseType, 'id'| 'date' | 'userId'> = {
-          name: `Contribution to: ${name}`,
-          amount: amount,
-          category: 'Other' as Category,
-          walletId: walletId
-        };
-        addDocumentNonBlocking(collection(firestore, 'users', user.uid, 'expenses'), newExpense);
-
-        // 3. Update wishlist item
-        const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', id);
+        transaction.set(newExpenseRef, { ...newExpenseData, date: serverTimestamp(), userId: user.uid });
         transaction.set(wishlistItemRef, { savedAmount: newSavedAmount }, { merge: true });
         
     }).catch(error => {
@@ -258,9 +241,6 @@ export default function DashboardPage() {
     const difference = item.targetAmount - item.savedAmount;
     
     if (difference > 0) {
-      // This case should ideally not happen if contributions are tracked properly
-      // But as a fallback, we create a final expense. A wallet must be selected.
-      // For now, assume it comes from cash.
       addExpense({
         name: `Final payment for ${item.name}`,
         amount: difference,
@@ -268,8 +248,6 @@ export default function DashboardPage() {
         walletId: CASH_ON_HAND_WALLET.id
       });
     }
-
-    // Mark the wishlist item as purchased
     const wishlistItemRef = doc(firestore, 'users', user.uid, 'wishlist', item.id);
     setDocumentNonBlocking(wishlistItemRef, { purchased: true, savedAmount: item.targetAmount }, { merge: true });
   }
@@ -320,40 +298,25 @@ export default function DashboardPage() {
             }
             
             const newAmount = updatedData.amount ?? oldAmount;
+            const amountDifference = newAmount - oldAmount;
 
-            // Case 1: Wallet changed from E-Wallet to E-Wallet
-            if (oldWalletId !== newWalletId && oldWalletId !== CASH_ON_HAND_WALLET.id && newWalletId !== CASH_ON_HAND_WALLET.id) {
-                const oldWalletRef = doc(firestore, 'users', user.uid, 'wallets', oldWalletId!);
-                const newWalletRef = doc(firestore, 'users', user.uid, 'wallets', newWalletId);
-                const [oldWalletDoc, newWalletDoc] = await Promise.all([transaction.get(oldWalletRef), transaction.get(newWalletRef)]);
-
-                if (!oldWalletDoc.exists() || !newWalletDoc.exists()) throw new Error("One of the wallets not found!");
-
-                transaction.update(oldWalletRef, { balance: oldWalletDoc.data().balance + oldAmount });
-                transaction.update(newWalletRef, { balance: newWalletDoc.data().balance - newAmount });
-            } 
-            // Case 2: Changed from Cash to E-Wallet
-            else if (oldWalletId === CASH_ON_HAND_WALLET.id && newWalletId !== CASH_ON_HAND_WALLET.id) {
-                const newWalletRef = doc(firestore, 'users', user.uid, 'wallets', newWalletId);
-                const newWalletDoc = await transaction.get(newWalletRef);
-                if (!newWalletDoc.exists()) throw new Error("Wallet not found!");
-                transaction.update(newWalletRef, { balance: newWalletDoc.data().balance - newAmount });
+            // Revert old transaction amount
+            if (oldWalletId && oldWalletId !== CASH_ON_HAND_WALLET.id) {
+                const oldWalletRef = doc(firestore, 'users', user.uid, 'wallets', oldWalletId);
+                const oldWalletDoc = await transaction.get(oldWalletRef);
+                 if (oldWalletDoc.exists()) {
+                    transaction.update(oldWalletRef, { balance: oldWalletDoc.data().balance + oldAmount });
+                }
             }
-            // Case 3: Changed from E-Wallet to Cash
-            else if (oldWalletId !== CASH_ON_HAND_WALLET.id && newWalletId === CASH_ON_HAND_WALLET.id) {
-                 const oldWalletRef = doc(firestore, 'users', user.uid, 'wallets', oldWalletId!);
-                 const oldWalletDoc = await transaction.get(oldWalletRef);
-                 if (!oldWalletDoc.exists()) throw new Error("Old wallet not found!");
-                 transaction.update(oldWalletRef, { balance: oldWalletDoc.data().balance + oldAmount });
-            }
-            // Case 4: Same wallet, amount might have changed (or it's cash)
-            else {
-                if (newWalletId !== CASH_ON_HAND_WALLET.id) {
-                    const amountDifference = newAmount - oldAmount;
-                    const walletRef = doc(firestore, 'users', user.uid, 'wallets', newWalletId);
-                    const walletDoc = await transaction.get(walletRef);
-                    if (!walletDoc.exists()) throw new Error("Wallet not found!");
-                    transaction.update(walletRef, { balance: walletDoc.data().balance - amountDifference });
+
+            // Apply new transaction amount
+            if (newWalletId && newWalletId !== CASH_ON_HAND_WALLET.id) {
+                 const newWalletRef = doc(firestore, 'users', user.uid, 'wallets', newWalletId);
+                 const newWalletDoc = await transaction.get(newWalletRef);
+                 if (newWalletDoc.exists()) {
+                    transaction.update(newWalletRef, { balance: newWalletDoc.data().balance - newAmount });
+                } else {
+                    throw new Error("New wallet not found!");
                 }
             }
 
@@ -372,19 +335,14 @@ export default function DashboardPage() {
   
       try {
         await runTransaction(firestore, async (transaction) => {
-          // If it's an E-wallet transaction, we need to revert the balance
           if (expense.walletId && expense.walletId !== CASH_ON_HAND_WALLET.id) {
             const walletRef = doc(firestore, 'users', user.uid, 'wallets', expense.walletId);
             const walletDoc = await transaction.get(walletRef);
             if (walletDoc.exists()) {
               const newBalance = walletDoc.data().balance + expense.amount;
               transaction.update(walletRef, { balance: newBalance });
-            } else {
-              // If wallet doesn't exist, we might just log this or ignore
-              console.warn(`Wallet with id ${expense.walletId} not found for expense ${expense.id}. Balance not reverted.`);
             }
           }
-          // Delete the expense document
           transaction.delete(expenseRef);
         });
         toast({ title: 'Expense Deleted', description: 'The transaction has been removed.' });
@@ -409,8 +367,7 @@ export default function DashboardPage() {
             const newWalletId = updatedData.walletId || currentData.walletId;
             const oldWalletId = currentData.walletId;
             const newAmount = updatedData.amount ?? oldAmount;
-            const amountDifference = newAmount - oldAmount;
-  
+            
             // Revert old wallet balance
             if (oldWalletId && oldWalletId !== CASH_ON_HAND_WALLET.id) {
                 const oldWalletRef = doc(firestore, 'users', user.uid, 'wallets', oldWalletId);
@@ -484,7 +441,7 @@ export default function DashboardPage() {
           addIncome={addIncome}
           budgetGoals={budgetGoals || []}
           updateBudgets={updateBudgets}
-          wallets={wallets || []}
+          wallets={allWallets}
         />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-8">

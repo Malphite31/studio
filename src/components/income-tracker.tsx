@@ -41,7 +41,7 @@ const formatCurrency = (amount: number) =>
 
 
 export default function IncomeTracker({ income, wallets, onUpdateIncome, onDeleteIncome, addIncome }: IncomeTrackerProps) {
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
 
   const sortedIncome = [...income].sort((a, b) => {
@@ -55,7 +55,12 @@ export default function IncomeTracker({ income, wallets, onUpdateIncome, onDelet
 
   const handleEditClick = (income: Income) => {
     setSelectedIncome(income);
-    setIsEditOpen(true);
+    setIsFormOpen(true);
+  }
+  
+  const handleAddClick = () => {
+    setSelectedIncome(null);
+    setIsFormOpen(true);
   }
 
   return (
@@ -104,7 +109,7 @@ export default function IncomeTracker({ income, wallets, onUpdateIncome, onDelet
                                         Edit
                                     </DropdownMenuItem>
                                     <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem className="text-destructive">
+                                        <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Delete
                                         </DropdownMenuItem>
@@ -150,21 +155,21 @@ export default function IncomeTracker({ income, wallets, onUpdateIncome, onDelet
               <span>Total Income:</span>
               <span>{formatCurrency(totalIncome)}</span>
           </div>
-          <IncomeForm triggerType='button' wallets={wallets} addIncome={addIncome}>
+           <Button variant="outline" className="w-full" onClick={handleAddClick}>
               <PlusCircle className="mr-2 h-4 w-4" /> Add Income
-          </IncomeForm>
+          </Button>
         </CardFooter>
       </Card>
-      {selectedIncome && (
-        <IncomeForm
-            triggerType='dialog'
-            open={isEditOpen}
-            onOpenChange={setIsEditOpen}
-            wallets={wallets}
-            incomeToEdit={selectedIncome}
-            onUpdate={onUpdateIncome}
-        />
-     )}
+      
+      <IncomeForm
+          triggerType='dialog'
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          wallets={wallets}
+          incomeToEdit={selectedIncome || undefined}
+          onUpdate={onUpdateIncome}
+          addIncome={addIncome}
+      />
     </>
   );
 }

@@ -48,25 +48,24 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
   const isGoalReached = item.savedAmount >= item.targetAmount;
   const progress = (item.savedAmount / item.targetAmount) * 100;
 
-  const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { 
         amount: 10,
-        walletId: allWallets.length > 0 ? allWallets[0].id : undefined
+        walletId: wallets.length > 0 ? wallets[0].id : undefined
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const amountToContribute = values.amount;
-    const availableBalance = allWallets.find(w => w.id === values.walletId)?.balance ?? 0;
+    const selectedWallet = wallets.find(w => w.id === values.walletId);
+    const availableBalance = selectedWallet?.balance ?? 0;
     
     if (values.walletId !== CASH_ON_HAND_WALLET.id && amountToContribute > availableBalance) {
         toast({
             variant: 'destructive',
             title: "Insufficient funds!",
-            description: `Your balance in ${allWallets.find(w => w.id === values.walletId)?.name} is not enough for this contribution.`
+            description: `Your balance in ${selectedWallet?.name} is not enough for this contribution.`
         })
         return;
     }
@@ -141,7 +140,7 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
                                     </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                    {allWallets.map((wallet) => (
+                                    {wallets.map((wallet) => (
                                         <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>
                                     ))}
                                     </SelectContent>

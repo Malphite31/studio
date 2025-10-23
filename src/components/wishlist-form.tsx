@@ -35,7 +35,7 @@ const formSchema = z.object({
 });
 
 interface WishlistFormProps {
-  addWishlistItem: (item: Omit<WishlistItem, 'id' | 'savedAmount' | 'userId'>) => void;
+  addWishlistItem: (item: Omit<WishlistItem, 'id' | 'savedAmount' | 'userId' | 'purchased'>) => void;
 }
 
 export default function WishlistForm({ addWishlistItem }: WishlistFormProps) {

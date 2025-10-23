@@ -4,7 +4,6 @@ import { format, isPast, differenceInDays, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { HandCoins, ArrowRightLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { Iou } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -13,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
