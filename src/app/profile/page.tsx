@@ -74,6 +74,7 @@ export default function ProfilePage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
+  const [isResetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [fileToImport, setFileToImport] = useState<File | null>(null);
 
 
@@ -255,17 +256,14 @@ export default function ProfilePage() {
             const data = JSON.parse(e.target?.result as string);
             const batch = writeBatch(firestore);
             
-            // Define collections to manage
             const collectionsToManage = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
 
-            // Delete all existing data in managed collections
             for (const collectionName of collectionsToManage) {
                 const collectionRef = collection(firestore, 'users', user.uid, collectionName);
                 const snapshot = await getDocs(collectionRef);
                 snapshot.docs.forEach(doc => batch.delete(doc.ref));
             }
             
-            // Import new data from the file
             for (const collectionName in data) {
                 if (collectionsToManage.includes(collectionName)) {
                     const collectionData = data[collectionName];
@@ -288,6 +286,28 @@ export default function ProfilePage() {
         }
     };
     reader.readAsText(fileToImport);
+  };
+  
+  const handleResetDataConfirm = async () => {
+    if (!user) return;
+    setResetConfirmOpen(false);
+    toast({ title: 'Resetting Data...', description: 'Please wait while we clear your financial records.' });
+
+    try {
+        const batch = writeBatch(firestore);
+        const collectionsToReset = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
+
+        for (const collectionName of collectionsToReset) {
+            const collectionRef = collection(firestore, 'users', user.uid, collectionName);
+            const snapshot = await getDocs(collectionRef);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        }
+
+        await batch.commit();
+        toast({ title: 'Data Reset Successful!', description: 'Your financial data has been cleared.' });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Reset Failed', description: error.message });
+    }
   };
   
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
@@ -390,11 +410,12 @@ export default function ProfilePage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Data Management</CardTitle>
-                    <CardDescription>Export your financial data or import it from a backup file.</CardDescription>
+                    <CardDescription>Export, import, or reset your financial data.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                      <Button variant="outline" onClick={handleExport}>Export My Data</Button>
-                     <Button variant="destructive" onClick={() => importFileInputRef.current?.click()}>Import Data</Button>
+                     <Button variant="outline" onClick={() => importFileInputRef.current?.click()}>Import Data</Button>
+                     <Button variant="destructive" onClick={() => setResetConfirmOpen(true)}>Reset Data</Button>
                      <input
                         type="file"
                         ref={importFileInputRef}
@@ -405,7 +426,7 @@ export default function ProfilePage() {
                 </CardContent>
                  <CardFooter>
                     <p className='text-xs text-muted-foreground'>
-                        <strong>Warning:</strong> Importing data will overwrite all current financial data in your account. Your user profile will not be affected.
+                        <strong>Warning:</strong> Importing or resetting data will permanently overwrite or delete all current financial data in your account. Your user profile will not be affected.
                     </p>
                 </CardFooter>
             </Card>
@@ -456,6 +477,14 @@ export default function ProfilePage() {
         onConfirm={handleImportConfirm}
         confirmText="Yes, overwrite my data"
       />
+       <ConfirmationDialog
+        open={isResetConfirmOpen}
+        onOpenChange={setResetConfirmOpen}
+        title="Are you sure you want to reset everything?"
+        description="This action is permanent and cannot be undone. All your expenses, income, budgets, and other financial records will be deleted forever."
+        onConfirm={handleResetDataConfirm}
+        confirmText="Yes, Reset My Data"
+      />
     </>
   );
 }
@@ -501,5 +530,3 @@ function getCroppedImg(image: HTMLImageElement, crop: Crop, fileName: string): P
     }, 'image/jpeg');
   });
 }
-
-    
