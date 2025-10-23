@@ -30,10 +30,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user && user.metadata.creationTime === user.metadata.lastSignInTime) {
-      const timer = setTimeout(() => {
-        setShowWelcome(true);
-      }, 1000); 
-      return () => clearTimeout(timer);
+      const showTour = localStorage.getItem('hideWelcomeTour') !== 'true';
+      if (showTour) {
+        const timer = setTimeout(() => {
+          setShowWelcome(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [user]);
 

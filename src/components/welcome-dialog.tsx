@@ -1,15 +1,17 @@
 'use client';
 
-import { Coins } from 'lucide-react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { TourGuide } from './tour-guide';
 
 interface WelcomeDialogProps {
   open: boolean;
@@ -17,21 +19,34 @@ interface WelcomeDialogProps {
 }
 
 export function WelcomeDialog({ open, onOpenChange }: WelcomeDialogProps) {
+  const [hideWelcome, setHideWelcome] = useState(false);
+
+  const handleClose = () => {
+    if (hideWelcome) {
+      try {
+        localStorage.setItem('hideWelcomeTour', 'true');
+      } catch (error) {
+        console.error("Could not save preference to localStorage", error);
+      }
+    }
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <div className="flex justify-center mb-4">
-            <Coins className="h-16 w-16 text-primary" />
-          </div>
           <DialogTitle className="text-center text-2xl">Welcome to SpendWise!</DialogTitle>
-          <DialogDescription className="text-center pt-2">
-            We're excited to help you take control of your finances.
-            Start by adding your first transaction, setting a budget, or creating a savings goal.
-          </DialogDescription>
         </DialogHeader>
-        <DialogFooter className='sm:justify-center'>
-          <Button onClick={() => onOpenChange(false)}>Let's Get Started!</Button>
+        
+        <TourGuide />
+        
+        <DialogFooter className="sm:justify-between items-center pt-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox id="hide-welcome" checked={hideWelcome} onCheckedChange={(checked) => setHideWelcome(checked as boolean)} />
+            <Label htmlFor="hide-welcome" className="text-sm font-normal">Don't show this again</Label>
+          </div>
+          <Button onClick={handleClose}>Get Started</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
