@@ -70,7 +70,7 @@ export default function WishlistItem({ item, contributeToWishlist, addExpense }:
     });
     toast({
         title: "Item Purchased!",
-        description: `Enjoy your new ${item.name}! An expense has been recorded.`,
+        description: `Enjoy your new ${item.name}! An expense has been recorded, and your balance is updated.`,
     })
   }
 
@@ -119,12 +119,12 @@ export default function WishlistItem({ item, contributeToWishlist, addExpense }:
           <AlertDialogHeader>
             <AlertDialogTitle>Congratulations! 🎉</AlertDialogTitle>
             <AlertDialogDescription>
-              You've reached your savings goal for the {item.name}! Are you ready to make the purchase? This will add an expense for this item.
+              You've reached your savings goal for the {item.name}! Would you like to record the purchase now? This will add it as an expense and update your balance.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Not Yet</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBuy}>Yes, Buy It!</AlertDialogAction>
+            <AlertDialogCancel>Decide Later</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBuy}>Yes, Buy It Now</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
