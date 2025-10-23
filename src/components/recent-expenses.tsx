@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Expense, EWallet } from '@/lib/types';
+import type { Expense, EWallet, UserProfile } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
@@ -34,8 +34,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import TransactionReport from './transaction-report';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { doc } from 'firebase/firestore';
+
 
 interface RecentExpensesProps {
   expenses: Expense[];
@@ -51,6 +58,12 @@ const formatCurrency = (amount: number) =>
 export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpense, wallets }: RecentExpensesProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   const sortedExpenses = [...expenses].sort((a, b) => {
       const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
@@ -66,14 +79,27 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
     setIsEditOpen(true);
   };
   
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    const reportElement = printRef.current;
+    if (!reportElement) return;
+
+    const canvas = await html2canvas(reportElement, { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    
+    const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+    });
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+    pdf.save('SpendWise-Report.pdf');
   }
 
 
   return (
     <>
-    <Card className="printable-area">
+    <Card>
       <CardHeader className='flex-row items-center justify-between'>
         <div>
           <CardTitle>Recent Transactions</CardTitle>
@@ -184,6 +210,11 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
             onUpdate={onUpdateExpense}
         />
      )}
+    <div className='hidden'>
+        <div ref={printRef}>
+            <TransactionReport expenses={recentExpenses} user={userProfile} />
+        </div>
+    </div>
     </>
   );
 }
