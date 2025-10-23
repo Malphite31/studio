@@ -11,6 +11,8 @@ import {
 import { Progress } from '@/components/ui/progress';
 import type { Expense, BudgetGoal } from '@/lib/types';
 import { CATEGORY_COLORS } from '@/lib/data';
+import { AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface BudgetStatusProps {
   expenses: Expense[];
@@ -56,18 +58,27 @@ export default function BudgetStatus({
             budgetStatusData.map((status) => (
               <div key={status.category} className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium">{status.category}</span>
-                  <span className={`font-medium ${status.overBudget ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  <div className="flex items-center gap-2 font-medium">
+                    {status.category}
+                    {status.overBudget && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                  </div>
+                  <span className={cn(
+                      "font-medium text-muted-foreground",
+                      status.overBudget && 'text-destructive'
+                  )}>
                     ₱{status.spent.toFixed(2)} / ₱{status.amount.toFixed(2)}
                   </span>
                 </div>
                 <Progress
                   value={status.progress}
-                  className="h-2"
+                  className={cn("h-2", status.overBudget && "bg-destructive/20")}
+                  indicatorClassName={cn(
+                    "bg-[--color-indicator]",
+                    status.overBudget && "bg-destructive"
+                  )}
                   style={{
                     '--color-indicator': CATEGORY_COLORS[status.category],
                   } as React.CSSProperties}
-                  indicatorClassName={`bg-[--color-indicator]`}
                 />
               </div>
             ))
