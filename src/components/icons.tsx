@@ -4,6 +4,7 @@ import {
   Clapperboard,
   Home,
   Zap,
+  Receipt,
   Ellipsis,
   type LucideIcon,
 } from 'lucide-react';
@@ -15,5 +16,6 @@ export const CategoryIcons: Record<Category, LucideIcon> = {
   Entertainment: Clapperboard,
   Housing: Home,
   Utilities: Zap,
+  Bills: Receipt,
   Other: Ellipsis,
 };

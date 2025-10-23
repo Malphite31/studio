@@ -6,6 +6,7 @@ export const CATEGORIES = [
   'Entertainment',
   'Housing',
   'Utilities',
+  'Bills',
   'Other',
 ] as const;
 
@@ -15,6 +16,7 @@ export const CATEGORY_COLORS: Record<Category, string> = {
     Entertainment: 'hsl(var(--chart-3))',
     Housing: 'hsl(var(--chart-4))',
     Utilities: 'hsl(var(--chart-5))',
+    Bills: 'hsl(var(--chart-1))', // Reusing a color for now
     Other: 'hsl(var(--muted))',
 };
 
@@ -69,6 +71,7 @@ export const initialBudgetGoals: BudgetGoal[] = [
   { category: 'Entertainment', amount: 150 },
   { category: 'Housing', amount: 1500 },
   { category: 'Utilities', amount: 150 },
+  { category: 'Bills', amount: 250 },
   { category: 'Other', amount: 100 },
 ];
 
