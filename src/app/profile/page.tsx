@@ -8,7 +8,6 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL, type UploadTaskS
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import 'react-image-crop/dist/ReactCrop.css';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
