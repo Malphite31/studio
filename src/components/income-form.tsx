@@ -153,7 +153,7 @@ export function IncomeForm({
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a wallet" />
+                        <SelectValue placeholder="Select where to deposit" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

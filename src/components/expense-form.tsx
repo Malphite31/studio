@@ -100,7 +100,6 @@ export function ExpenseForm({
   });
 
   useEffect(() => {
-    const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
     if (isEditMode && expenseToEdit) {
       form.reset({
         name: expenseToEdit.name,
@@ -114,7 +113,7 @@ export function ExpenseForm({
             amount: 0,
             category: 'Other',
             date: new Date(),
-            walletId: allWallets.length > 0 ? allWallets[0].id : undefined,
+            walletId: wallets.length > 0 ? wallets[0].id : undefined,
         });
     }
   }, [expenseToEdit, isEditMode, form, open]);
@@ -127,8 +126,8 @@ export function ExpenseForm({
     if (isWalletRequired && !values.walletId) {
       toast({
         variant: "destructive",
-        title: "Wallet required",
-        description: `Please select a wallet for this ${values.category.toLowerCase()}.`,
+        title: "Payment Method required",
+        description: `Please select a payment method for this ${values.category.toLowerCase()}.`,
       });
       return;
     }
@@ -273,11 +272,11 @@ export function ExpenseForm({
                   name="walletId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Wallet</FormLabel>
+                      <FormLabel>Payment Method</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a wallet" />
+                            <SelectValue placeholder="Select a payment method" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
