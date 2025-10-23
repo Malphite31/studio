@@ -20,7 +20,7 @@ import { format, isValid } from 'date-fns';
 import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
 import { ExpenseForm } from './expense-form';
-import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { MoreVertical, Pencil, Trash2, Printer } from 'lucide-react';
 import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import {
@@ -35,6 +35,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface RecentExpensesProps {
   expenses: Expense[];
@@ -64,16 +65,26 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
     setSelectedExpense(expense);
     setIsEditOpen(true);
   };
+  
+  const handlePrint = () => {
+    window.print();
+  }
 
 
   return (
     <>
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Transactions</CardTitle>
-        <CardDescription>
-          Here are your 10 most recent expenses.
-        </CardDescription>
+    <Card className="printable-area">
+      <CardHeader className='flex-row items-center justify-between'>
+        <div>
+          <CardTitle>Recent Transactions</CardTitle>
+          <CardDescription>
+            Here are your 10 most recent expenses.
+          </CardDescription>
+        </div>
+        <Button variant="outline" size="icon" onClick={handlePrint} className='no-print'>
+            <Printer className="h-4 w-4" />
+            <span className="sr-only">Print</span>
+        </Button>
       </CardHeader>
       <CardContent>
         <Table>
@@ -81,7 +92,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
             <TableRow>
               <TableHead>Expense</TableHead>
               <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right no-print">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -93,7 +104,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                   <TableRow key={expense.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <span className="flex items-center justify-center w-8 h-8 bg-secondary rounded-full">
+                        <span className="flex items-center justify-center w-8 h-8 bg-secondary rounded-full no-print">
                           <Icon className="h-4 w-4 text-muted-foreground" />
                         </span>
                         <div>
@@ -108,7 +119,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
                     <TableCell className="text-right font-medium">
                       -{formatCurrency(expense.amount)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right no-print">
                        <AlertDialog>
                           <DropdownMenu>
                               <DropdownMenuTrigger asChild>
