@@ -29,7 +29,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user && user.metadata.creationTime === user.metadata.lastSignInTime) {
+    if (user) {
       const showTour = localStorage.getItem('hideWelcomeTour') !== 'true';
       if (showTour) {
         const timer = setTimeout(() => {
