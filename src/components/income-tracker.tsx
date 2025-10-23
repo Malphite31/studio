@@ -43,6 +43,7 @@ const formatCurrency = (amount: number) =>
 export default function IncomeTracker({ income, wallets, onUpdateIncome, onDeleteIncome, addIncome }: IncomeTrackerProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const sortedIncome = [...income].sort((a, b) => {
     const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
@@ -66,9 +67,14 @@ export default function IncomeTracker({ income, wallets, onUpdateIncome, onDelet
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle>Income</CardTitle>
-          <CardDescription>Your recent income sources.</CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle>Income</CardTitle>
+            <CardDescription>Your recent income sources.</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setIsEditMode(!isEditMode)}>
+            {isEditMode ? 'Done' : 'Edit'}
+          </Button>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-64 pr-4">
@@ -77,7 +83,7 @@ export default function IncomeTracker({ income, wallets, onUpdateIncome, onDelet
                 <TableRow>
                   <TableHead className='p-2'>Source</TableHead>
                   <TableHead className="text-right p-2">Amount</TableHead>
-                  <TableHead className="text-right p-2">Actions</TableHead>
+                  {isEditMode && <TableHead className="text-right p-2">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -95,53 +101,55 @@ export default function IncomeTracker({ income, wallets, onUpdateIncome, onDelet
                         <TableCell className="text-right font-medium text-green-600 p-2">
                           +{formatCurrency(item.amount)}
                         </TableCell>
-                        <TableCell className='p-2 text-right'>
-                          <AlertDialog>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onSelect={() => handleEditClick(item)}>
-                                        <Pencil className="mr-2 h-4 w-4" />
-                                        Edit
-                                    </DropdownMenuItem>
-                                    <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete
-                                        </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                        {isEditMode && (
+                          <TableCell className='p-2 text-right'>
+                            <AlertDialog>
+                              <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                          <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onSelect={() => handleEditClick(item)}>
+                                          <Pencil className="mr-2 h-4 w-4" />
+                                          Edit
+                                      </DropdownMenuItem>
+                                      <AlertDialogTrigger asChild>
+                                          <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                              <Trash2 className="mr-2 h-4 w-4" />
+                                              Delete
+                                          </DropdownMenuItem>
+                                      </AlertDialogTrigger>
+                                  </DropdownMenuContent>
+                              </DropdownMenu>
 
-                            <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                          Are you sure you want to delete this income record? This action cannot be undone.
-                                      </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                          onClick={() => onDeleteIncome(item)}
-                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                          Yes, Delete
-                                      </AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
-                          </AlertDialog>
-                        </TableCell>
+                              <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Are you sure you want to delete this income record? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => onDeleteIncome(item)}
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        >
+                                            Yes, Delete
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8 text-sm">
+                    <TableCell colSpan={isEditMode ? 3 : 2} className="text-center py-8 text-sm">
                       No income recorded yet.
                     </TableCell>
                   </TableRow>

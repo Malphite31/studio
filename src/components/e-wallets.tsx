@@ -46,6 +46,7 @@ const formatCurrency = (amount: number) =>
 export default function EWallets({ wallets, addWallet, updateWallet, deleteWallet }: EWalletsProps) {
   const [isAddOpen, setAddOpen] = useState(false);
   const [isEditOpen, setEditOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState<EWallet | null>(null);
 
   const addForm = useForm<z.infer<typeof addFormSchema>>({
@@ -85,9 +86,14 @@ export default function EWallets({ wallets, addWallet, updateWallet, deleteWalle
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Cash & E-Wallets</CardTitle>
-        <CardDescription>Your digital and physical money sources.</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between">
+        <div>
+          <CardTitle>Cash & E-Wallets</CardTitle>
+          <CardDescription>Your digital and physical money sources.</CardDescription>
+        </div>
+         <Button variant="outline" size="sm" onClick={() => setIsEditMode(!isEditMode)}>
+          {isEditMode ? 'Done' : 'Edit'}
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -105,7 +111,7 @@ export default function EWallets({ wallets, addWallet, updateWallet, deleteWalle
                 </div>
                 <div className='flex items-center gap-2'>
                   <span className="font-semibold">{formatCurrency(wallet.balance)}</span>
-                  {wallet.id !== 'cash' && (
+                  {wallet.id !== 'cash' && isEditMode && (
                      <AlertDialog>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

@@ -68,14 +68,14 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-start justify-between">
           <div>
             <CardTitle>Recent Transactions</CardTitle>
             <CardDescription>
               Here are your 10 most recent expenses.
             </CardDescription>
           </div>
-          <Button variant="outline" onClick={() => setIsEditMode(!isEditMode)}>
+          <Button variant="outline" size="sm" onClick={() => setIsEditMode(!isEditMode)}>
             {isEditMode ? 'Done' : 'Edit'}
           </Button>
         </CardHeader>
