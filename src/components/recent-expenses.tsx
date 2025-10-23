@@ -83,16 +83,24 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
     const reportElement = printRef.current;
     if (!reportElement) return;
 
-    const canvas = await html2canvas(reportElement, { scale: 2 });
+    const canvas = await html2canvas(reportElement, { scale: 2, useCORS: true });
     const imgData = canvas.toDataURL('image/png');
     
     const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
-        format: [canvas.width, canvas.height]
+        format: 'a4'
     });
     
-    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const ratio = canvasWidth / canvasHeight;
+    const widthInPdf = pdfWidth;
+    const heightInPdf = widthInPdf / ratio;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, widthInPdf, heightInPdf);
     pdf.save('SpendWise-Report.pdf');
   }
 
