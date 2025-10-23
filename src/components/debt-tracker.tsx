@@ -34,6 +34,10 @@ interface DebtTrackerProps {
   markAsPaid: (id: string) => void;
 }
 
+const formatCurrency = (amount: number) => 
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
+
+
 export default function DebtTracker({ ious, markAsPaid }: DebtTrackerProps) {
   const { toast } = useToast();
   
@@ -99,7 +103,7 @@ function IouTable({ ious, onPaid, type }: IouTableProps) {
                       <TableCell className="font-medium p-2">{iou.name}</TableCell>
                       <TableCell className={`text-right font-medium p-2 ${iou.type === 'Borrow' ? 'text-destructive' : 'text-green-600'}`}>
                         {iou.type === 'Borrow' ? '- ' : '+ '}
-                        ₱{iou.amount.toFixed(2)}
+                        {formatCurrency(iou.amount)}
                       </TableCell>
                       {type !== 'paid' && 
                         <TableCell className='p-2'>

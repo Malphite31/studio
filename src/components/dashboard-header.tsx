@@ -40,6 +40,10 @@ interface DashboardHeaderProps {
   updateBudgets: (updatedGoals: Record<Category, number>) => void;
 }
 
+const formatCurrency = (amount: number) => 
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
+
+
 export default function DashboardHeader({
   balance,
   addExpense,
@@ -76,7 +80,7 @@ export default function DashboardHeader({
                         balance > 0 && "text-green-600",
                         balance < 0 && "text-destructive",
                     )}>
-                        ₱{balance.toFixed(2)}
+                        {formatCurrency(balance)}
                     </span>
                 </div>
             </div>

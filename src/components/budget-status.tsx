@@ -19,6 +19,10 @@ interface BudgetStatusProps {
   budgetGoals: BudgetGoal[];
 }
 
+const formatCurrency = (amount: number) => 
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
+
+
 export default function BudgetStatus({
   expenses,
   budgetGoals,
@@ -66,7 +70,7 @@ export default function BudgetStatus({
                       "font-medium text-muted-foreground",
                       status.overBudget && 'text-destructive'
                   )}>
-                    ₱{status.spent.toFixed(2)} / ₱{status.amount.toFixed(2)}
+                    {formatCurrency(status.spent)} / {formatCurrency(status.amount)}
                   </span>
                 </div>
                 <Progress

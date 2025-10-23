@@ -25,6 +25,10 @@ interface RecentExpensesProps {
   expenses: Expense[];
 }
 
+const formatCurrency = (amount: number) => 
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
+
+
 export default function RecentExpenses({ expenses }: RecentExpensesProps) {
   const sortedExpenses = [...expenses].sort((a, b) => {
       const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
@@ -72,7 +76,7 @@ export default function RecentExpenses({ expenses }: RecentExpensesProps) {
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      -₱{expense.amount.toFixed(2)}
+                      -{formatCurrency(expense.amount)}
                     </TableCell>
                   </TableRow>
                 );

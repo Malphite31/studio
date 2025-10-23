@@ -24,6 +24,10 @@ interface SpendingBreakdownProps {
   expenses: Expense[];
 }
 
+const formatCurrency = (amount: number) => 
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
+
+
 export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) {
   const { chartData, chartConfig } = React.useMemo(() => {
     if (!expenses.length) {
@@ -104,7 +108,7 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
       </CardContent>
        <CardFooter className="flex-col gap-2 text-sm pt-4">
         <div className="flex items-center gap-2 font-medium leading-none">
-          Total spent this month: ₱{totalSpent.toFixed(2)}
+          Total spent this month: {formatCurrency(totalSpent)}
         </div>
         <div className="leading-none text-muted-foreground">
           Showing spending summary for all categories.

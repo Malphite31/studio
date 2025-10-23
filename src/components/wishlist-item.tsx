@@ -34,6 +34,10 @@ interface WishlistItemProps {
   purchaseWishlistItem: (item: WishlistItemType) => void;
 }
 
+const formatCurrency = (amount: number) => 
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
+
+
 export default function WishlistItem({ item, contributeToWishlist, purchaseWishlistItem }: WishlistItemProps) {
   const { toast } = useToast();
   
@@ -49,7 +53,7 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
     contributeToWishlist(item.id, values.amount, item.savedAmount, item.targetAmount);
     toast({
         title: "Contribution added!",
-        description: `You added ₱${values.amount.toFixed(2)} to ${item.name}.`,
+        description: `You added ${formatCurrency(values.amount)} to ${item.name}.`,
     });
     form.reset();
   }
@@ -73,7 +77,7 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
                 {item.name}
               </CardTitle>
               <CardDescription>
-                Saved ₱{item.savedAmount.toFixed(2)} of ₱{item.targetAmount.toFixed(2)}
+                Saved {formatCurrency(item.savedAmount)} of {formatCurrency(item.targetAmount)}
               </CardDescription>
             </div>
             {isGoalReached && <Sparkles className="h-6 w-6 text-yellow-400" />}
@@ -114,7 +118,7 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
           <AlertDialogDescription>
-            This will record the purchase of your {item.name} for ₱{item.targetAmount.toFixed(2)}. This action will create a new expense and remove the item from your wishlist. This cannot be undone.
+            This will record the purchase of your {item.name} for {formatCurrency(item.targetAmount)}. This action will create a new expense and remove the item from your wishlist. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

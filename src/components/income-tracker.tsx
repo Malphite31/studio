@@ -26,6 +26,10 @@ interface IncomeTrackerProps {
   income: Income[];
 }
 
+const formatCurrency = (amount: number) => 
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
+
+
 export default function IncomeTracker({ income }: IncomeTrackerProps) {
   const sortedIncome = [...income].sort((a, b) => {
     const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
@@ -59,7 +63,7 @@ export default function IncomeTracker({ income }: IncomeTrackerProps) {
                         </div>
                     </TableCell>
                     <TableCell className="text-right font-medium text-green-600 p-2">
-                      +₱{item.amount.toFixed(2)}
+                      +{formatCurrency(item.amount)}
                     </TableCell>
                   </TableRow>
                 );
@@ -76,7 +80,7 @@ export default function IncomeTracker({ income }: IncomeTrackerProps) {
       </ScrollArea>
       <div className="flex justify-end font-bold text-md mt-4 pr-2">
         <div className="flex items-center gap-2">
-            <span>Total: ₱{totalIncome.toFixed(2)}</span>
+            <span>Total: {formatCurrency(totalIncome)}</span>
         </div>
       </div>
     </>
