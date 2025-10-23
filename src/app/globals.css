@@ -66,7 +66,15 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: radial-gradient(circle, #FFCB2B, #FFA611, #F5820D);
+    background-color: #FFA611;
+    min-height: 100vh;
+    background-attachment: fixed;
+  }
+  .dark body {
+    background: radial-gradient(circle, #4a2e00, #3d1f00, #2c1300);
+    background-color: #3d1f00;
   }
 }
 

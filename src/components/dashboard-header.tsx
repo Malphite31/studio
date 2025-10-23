@@ -66,21 +66,21 @@ export default function DashboardHeader({
   };
 
   return (
-    <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-30">
+    <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-white/20 bg-background/50 backdrop-blur-lg px-4 md:px-6 z-30">
         <div className="flex items-center gap-2 font-semibold">
-          <Coins className="h-6 w-6 text-primary" />
+          <Coins className="h-6 w-6 text-orange-400" />
           <span className="">SpendWise</span>
         </div>
 
         <div className="flex items-center gap-4 ml-auto">
-            <div className="hidden sm:flex items-center gap-2 border-r pr-4">
+            <div className="hidden sm:flex items-center gap-2 border-r border-white/20 pr-4">
                 <Wallet className="h-5 w-5 text-muted-foreground" />
                 <div className="flex flex-col text-right">
                     <span className="text-xs text-muted-foreground">Total Balance</span>
                     <span className={cn(
                         "font-semibold text-sm",
-                        balance > 0 && "text-green-600",
-                        balance < 0 && "text-destructive",
+                        balance > 0 && "text-green-400",
+                        balance < 0 && "text-red-400",
                     )}>
                         {formatCurrency(balance)}
                     </span>
