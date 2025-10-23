@@ -47,7 +47,7 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
     const chartData = CATEGORIES.map((category, index) => ({
       category,
       total: dataByCat[category] || 0,
-      fill: `hsl(var(--chart-${(index % 5) + 1}))`,
+      fill: `var(--color-chart-${(index % 5) + 1})`,
     }));
 
     const chartConfig: ChartConfig = chartData.reduce((acc, data) => {

@@ -66,14 +66,14 @@ export default function DashboardHeader({
   };
 
   return (
-    <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-white/20 bg-background/50 backdrop-blur-lg px-4 md:px-6 z-30">
+    <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-white/10 bg-background/50 backdrop-blur-lg px-4 md:px-6 z-30">
         <div className="flex items-center gap-2 font-semibold">
-          <Coins className="h-6 w-6 text-orange-400" />
-          <span className="">SpendWise</span>
+          <Coins className="h-6 w-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full p-0.5" />
+          <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>SpendWise</span>
         </div>
 
         <div className="flex items-center gap-4 ml-auto">
-            <div className="hidden sm:flex items-center gap-2 border-r border-white/20 pr-4">
+            <div className="hidden sm:flex items-center gap-2 border-r border-white/10 pr-4">
                 <Wallet className="h-5 w-5 text-muted-foreground" />
                 <div className="flex flex-col text-right">
                     <span className="text-xs text-muted-foreground">Total Balance</span>
@@ -106,7 +106,7 @@ export default function DashboardHeader({
                     </SheetHeader>
                     <div className="flex items-center gap-2 text-lg font-semibold mb-6">
                         <Coins className="h-6 w-6 text-primary" />
-                        <span>SpendWise</span>
+                        <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>SpendWise</span>
                     </div>
                     <nav className="grid gap-4 text-lg font-medium">
                         <ThemeSwitcher />
