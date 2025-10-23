@@ -1,4 +1,4 @@
-import type { Expense, BudgetGoal, Category, WishlistItem, Iou } from './types';
+import type { Expense, BudgetGoal, Category, WishlistItem, Iou, EWallet } from './types';
 import { Timestamp } from 'firebase/firestore';
 
 export const CATEGORIES = [
@@ -20,6 +20,15 @@ export const CATEGORY_COLORS: Record<Category, string> = {
     Bills: 'hsl(var(--chart-1))',
     Other: 'hsl(var(--muted))',
 };
+
+// This represents cash not in an E-Wallet. It's a client-side concept.
+export const CASH_ON_HAND_WALLET: EWallet = {
+    id: 'cash',
+    name: 'Cash on Hand',
+    balance: 0, // This will be calculated on the client
+    userId: 'cash-user'
+}
+
 
 // This file now contains only static data types.
 // The initial data for expenses, budgets, etc., will be created

@@ -20,6 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import type { EWallet } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
+import { CASH_ON_HAND_WALLET } from '@/lib/data';
 
 interface EWalletsProps {
   wallets: EWallet[];
@@ -53,8 +54,8 @@ export default function EWallets({ wallets, addWallet }: EWalletsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>E-Wallets</CardTitle>
-        <CardDescription>Your digital money sources.</CardDescription>
+        <CardTitle>Cash & E-Wallets</CardTitle>
+        <CardDescription>Your digital and physical money sources.</CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-48 pr-4">
@@ -70,7 +71,7 @@ export default function EWallets({ wallets, addWallet }: EWalletsProps) {
                 </div>
               ))
             ) : (
-              <p className="text-center text-muted-foreground py-4 text-sm">No e-wallets added yet.</p>
+              <p className="text-center text-muted-foreground py-4 text-sm">No cash or e-wallets added yet.</p>
             )}
           </div>
         </ScrollArea>
@@ -112,7 +113,7 @@ export default function EWallets({ wallets, addWallet }: EWalletsProps) {
                   name="balance"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Balance</FormLabel>
+                      <FormLabel>Initial Balance</FormLabel>
                       <FormControl>
                         <Input type="number" step="0.01" {...field} />
                       </FormControl>

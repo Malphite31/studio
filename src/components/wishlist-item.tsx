@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { CASH_ON_HAND_WALLET } from '@/lib/data';
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Must be positive.' }),
@@ -47,11 +48,13 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
   const isGoalReached = item.savedAmount >= item.targetAmount;
   const progress = (item.savedAmount / item.targetAmount) * 100;
 
+  const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { 
         amount: 10,
-        walletId: wallets.length > 0 ? wallets[0].id : undefined
+        walletId: allWallets.length > 0 ? allWallets[0].id : undefined
     },
   });
 
@@ -61,7 +64,7 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
         title: "Contribution added!",
         description: `You added ${formatCurrency(values.amount)} to ${item.name}. Your balance has been updated.`,
     });
-    form.reset();
+    form.reset({ amount: 10, walletId: form.getValues('walletId')});
   }
 
   const handleBuy = () => {
@@ -126,7 +129,7 @@ export default function WishlistItem({ item, contributeToWishlist, purchaseWishl
                                     </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                    {wallets.map((wallet) => (
+                                    {allWallets.map((wallet) => (
                                         <SelectItem key={wallet.id} value={wallet.id}>{wallet.name}</SelectItem>
                                     ))}
                                     </SelectContent>

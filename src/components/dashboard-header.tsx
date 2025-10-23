@@ -30,6 +30,7 @@ import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useMemoFirebase } from '@/firebase/provider';
 import { cn } from '@/lib/utils';
+import { CASH_ON_HAND_WALLET } from '@/lib/data';
 
 interface DashboardHeaderProps {
   balance: number;
@@ -65,6 +66,8 @@ export default function DashboardHeader({
     signOut(auth);
   };
 
+  const allWallets = [CASH_ON_HAND_WALLET, ...wallets];
+
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-30">
         <div className="flex items-center gap-2 font-semibold">
@@ -90,7 +93,7 @@ export default function DashboardHeader({
             <div className='hidden sm:flex items-center gap-2'>
                 <ThemeSwitcher />
                 <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-                <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} triggerType="button" wallets={wallets} />
+                <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} triggerType="button" wallets={allWallets} />
             </div>
             
             <Sheet>

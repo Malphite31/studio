@@ -21,6 +21,7 @@ import { format, isValid } from 'date-fns';
 import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
 import { ExpenseForm } from './expense-form';
+import { CASH_ON_HAND_WALLET } from '@/lib/data';
 
 interface RecentExpensesProps {
   expenses: Expense[];
@@ -41,6 +42,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, wallets }: R
   });
   
   const recentExpenses = sortedExpenses.slice(0, 10);
+  const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
 
   return (
     <Card>
@@ -85,7 +87,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, wallets }: R
                     <TableCell className="text-right">
                        <ExpenseForm
                           triggerType="edit"
-                          wallets={wallets}
+                          wallets={allWallets}
                           expenseToEdit={expense}
                           onUpdate={onUpdateExpense}
                         />

@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { CATEGORIES } from '@/lib/data';
+import { CATEGORIES, CASH_ON_HAND_WALLET } from '@/lib/data';
 import type { Expense, Iou, Income, EWallet, Category } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -78,6 +78,8 @@ export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallet
 
   const isEditMode = !!expenseToEdit;
 
+  const allWallets = [CASH_ON_HAND_WALLET, ...wallets.filter(w => w.id !== CASH_ON_HAND_WALLET.id)];
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: isEditMode ? {
@@ -90,7 +92,7 @@ export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallet
       amount: 0,
       category: 'Other',
       date: new Date(),
-      walletId: wallets.length > 0 ? wallets[0].id : undefined,
+      walletId: allWallets.length > 0 ? allWallets[0].id : undefined,
     },
   });
   
@@ -257,7 +259,7 @@ export function ExpenseForm({ addExpense, addIou, addIncome, triggerType, wallet
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {wallets.map(wallet => (
+                          {allWallets.map(wallet => (
                             <SelectItem key={wallet.id} value={wallet.id}>
                               {wallet.name}
                             </SelectItem>
