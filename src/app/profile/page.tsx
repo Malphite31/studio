@@ -70,7 +70,7 @@ export default function ProfilePage() {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<Crop>();
   const [isCropModalOpen, setCropModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(isUploading);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
