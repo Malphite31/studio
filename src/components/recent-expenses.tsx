@@ -16,20 +16,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { Expense } from '@/lib/types';
+import type { Expense, EWallet } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
+import { ExpenseForm } from './expense-form';
 
 interface RecentExpensesProps {
   expenses: Expense[];
+  onUpdateExpense: (expenseId: string, oldAmount: number, updatedData: Partial<Expense>) => void;
+  wallets: EWallet[];
 }
 
 const formatCurrency = (amount: number) => 
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
 
 
-export default function RecentExpenses({ expenses }: RecentExpensesProps) {
+export default function RecentExpenses({ expenses, onUpdateExpense, wallets }: RecentExpensesProps) {
   const sortedExpenses = [...expenses].sort((a, b) => {
       const dateA = a.date instanceof Timestamp ? a.date.toDate() : a.date;
       const dateB = b.date instanceof Timestamp ? b.date.toDate() : b.date;
@@ -37,14 +40,14 @@ export default function RecentExpenses({ expenses }: RecentExpensesProps) {
       return dateB.getTime() - dateA.getTime();
   });
   
-  const recentExpenses = sortedExpenses.slice(0, 5);
+  const recentExpenses = sortedExpenses.slice(0, 10);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Recent Transactions</CardTitle>
         <CardDescription>
-          Here are your 5 most recent expenses.
+          Here are your 10 most recent expenses.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -53,13 +56,14 @@ export default function RecentExpenses({ expenses }: RecentExpensesProps) {
             <TableRow>
               <TableHead>Expense</TableHead>
               <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {recentExpenses.length > 0 ? (
               recentExpenses.map((expense) => {
                 const Icon = CategoryIcons[expense.category];
-                const expenseDate = expense.date instanceof Timestamp ? expense.date.toDate() : expense.date;
+                const expenseDate = expense.date instanceof Timestamp ? expense.date.toDate() : new Date();
                 return (
                   <TableRow key={expense.id}>
                     <TableCell>
@@ -78,12 +82,20 @@ export default function RecentExpenses({ expenses }: RecentExpensesProps) {
                     <TableCell className="text-right font-medium">
                       -{formatCurrency(expense.amount)}
                     </TableCell>
+                    <TableCell className="text-right">
+                       <ExpenseForm
+                          triggerType="edit"
+                          wallets={wallets}
+                          expenseToEdit={expense}
+                          onUpdate={onUpdateExpense}
+                        />
+                    </TableCell>
                   </TableRow>
                 );
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={2} className="text-center py-8">
+                <TableCell colSpan={3} className="text-center py-8">
                   No expenses logged yet.
                 </TableCell>
               </TableRow>

@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ExpenseForm } from './expense-form';
 import { BudgetForm } from './budget-form';
 import { ThemeSwitcher } from './theme-switcher';
-import type { Expense, BudgetGoal, Category, Iou, UserProfile, Income } from '@/lib/types';
+import type { Expense, BudgetGoal, Category, Iou, UserProfile, Income, EWallet } from '@/lib/types';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useDoc } from '@/firebase/firestore/use-doc';
@@ -38,6 +38,7 @@ interface DashboardHeaderProps {
   addIncome: (income: Omit<Income, 'id' | 'date' | 'userId'>) => void;
   budgetGoals: BudgetGoal[];
   updateBudgets: (updatedGoals: Record<Category, number>) => void;
+  wallets: EWallet[];
 }
 
 const formatCurrency = (amount: number) => 
@@ -51,6 +52,7 @@ export default function DashboardHeader({
   addIncome,
   budgetGoals,
   updateBudgets,
+  wallets
 }: DashboardHeaderProps) {
   const { user } = useUser();
   const auth = useAuth();
@@ -74,7 +76,7 @@ export default function DashboardHeader({
             <div className="hidden sm:flex items-center gap-2 border-r pr-4">
                 <Wallet className="h-5 w-5 text-muted-foreground" />
                 <div className="flex flex-col text-right">
-                    <span className="text-xs text-muted-foreground">Balance</span>
+                    <span className="text-xs text-muted-foreground">Total Balance</span>
                     <span className={cn(
                         "font-semibold text-sm",
                         balance > 0 && "text-green-600",
@@ -88,7 +90,7 @@ export default function DashboardHeader({
             <div className='hidden sm:flex items-center gap-2'>
                 <ThemeSwitcher />
                 <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-                <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} triggerType="button" />
+                <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} triggerType="button" wallets={wallets} />
             </div>
             
             <Sheet>

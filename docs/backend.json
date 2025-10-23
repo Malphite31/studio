@@ -65,6 +65,10 @@
         "description": {
           "type": "string",
           "description": "A description of the expense."
+        },
+        "walletId": {
+          "type": "string",
+          "description": "The ID of the EWallet this expense was paid from."
         }
       },
       "required": [
@@ -254,6 +258,10 @@
           "type": "string",
           "description": "The date the income was received.",
           "format": "date-time"
+        },
+        "walletId": {
+          "type": "string",
+          "description": "The ID of the EWallet this income was received in."
         }
       },
       "required": [
@@ -262,6 +270,36 @@
         "name",
         "amount",
         "date"
+      ]
+    },
+    "EWallet": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "EWallet",
+      "type": "object",
+      "description": "Represents a user's E-Wallet (e.g., GCash, PayMaya).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the EWallet."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the E-Wallet (e.g., 'GCash')."
+        },
+        "balance": {
+          "type": "number",
+          "description": "The current balance of the E-Wallet."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this wallet."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "balance",
+        "userId"
       ]
     }
   },
@@ -299,6 +337,10 @@
     "/users/{userId}/income/{incomeId}": {
       "schema": "Income",
       "description": "Stores income data for a specific user."
+    },
+    "/users/{userId}/wallets/{walletId}": {
+      "schema": "EWallet",
+      "description": "Stores E-Wallet information for a specific user."
     }
   }
 }

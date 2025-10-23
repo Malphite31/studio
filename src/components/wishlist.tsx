@@ -1,17 +1,18 @@
 'use client';
 
-import type { WishlistItem as WishlistItemType } from '@/lib/types';
+import type { WishlistItem as WishlistItemType, EWallet } from '@/lib/types';
 import WishlistForm from './wishlist-form';
 import WishlistItem from './wishlist-item';
 
 interface WishlistProps {
   items: WishlistItemType[];
   addWishlistItem: (item: Omit<WishlistItemType, 'id' | 'savedAmount' | 'userId'>) => void;
-  contributeToWishlist: (item: WishlistItemType, amount: number) => void;
+  contributeToWishlist: (item: WishlistItemType, amount: number, walletId: string) => void;
   purchaseWishlistItem: (item: WishlistItemType) => void;
+  wallets: EWallet[];
 }
 
-export default function Wishlist({ items, addWishlistItem, contributeToWishlist, purchaseWishlistItem }: WishlistProps) {
+export default function Wishlist({ items, addWishlistItem, contributeToWishlist, purchaseWishlistItem, wallets }: WishlistProps) {
   return (
     <div className="grid gap-4 md:gap-8">
       <WishlistForm addWishlistItem={addWishlistItem} />
@@ -23,6 +24,7 @@ export default function Wishlist({ items, addWishlistItem, contributeToWishlist,
               item={item} 
               contributeToWishlist={contributeToWishlist} 
               purchaseWishlistItem={purchaseWishlistItem}
+              wallets={wallets}
             />
           ))}
         </div>

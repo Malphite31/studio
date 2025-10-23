@@ -10,6 +10,7 @@ export interface Expense {
   category: Category;
   date: Date | Timestamp;
   userId: string;
+  walletId?: string;
 }
 
 export type BudgetGoal = {
@@ -54,4 +55,12 @@ export interface Income {
   amount: number;
   date: Date | Timestamp;
   userId: string;
+  walletId?: string;
+}
+
+export interface EWallet {
+    id: string;
+    name: string;
+    balance: number;
+    userId: string;
 }
