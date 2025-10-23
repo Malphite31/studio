@@ -14,3 +14,10 @@ export type BudgetGoal = {
   category: Category;
   amount: number;
 };
+
+export interface WishlistItem {
+  id: string;
+  name: string;
+  targetAmount: number;
+  savedAmount: number;
+}

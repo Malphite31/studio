@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip } from 'recharts';
+import { format } from 'date-fns';
 
 import {
   Card,
@@ -73,7 +74,7 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
         {totalSpent > 0 ? (
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[300px]"
+          className="mx-auto aspect-square max-h-[250px] sm:max-h-[300px]"
         >
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -96,7 +97,7 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
           </ResponsiveContainer>
         </ChartContainer>
         ) : (
-          <div className="flex h-[300px] w-full items-center justify-center">
+          <div className="flex h-[250px] sm:h-[300px] w-full items-center justify-center">
             <p className="text-muted-foreground">No spending data for this month.</p>
           </div>
         )}
@@ -111,9 +112,4 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
       </CardFooter>
     </Card>
   );
-}
-
-function format(date: Date, fmt: string) {
-  // A simple date formatter to avoid dependency on a large library for this one-off case
-  return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
 }

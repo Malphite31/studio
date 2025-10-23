@@ -1,7 +1,12 @@
 'use client';
 
-import { CircleUser, Coins } from 'lucide-react';
-
+import { CircleUser, Coins, Menu, Settings, PlusCircle } from 'lucide-react';
+import Link from 'next/link';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -27,31 +32,59 @@ export default function DashboardHeader({
   updateBudgets,
 }: DashboardHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-       <div className="flex items-center gap-2">
+    <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-30">
+        <div className="flex items-center gap-2 font-semibold">
           <Coins className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-semibold font-headline tracking-tight">SpendWise</h1>
+          <span className="">SpendWise</span>
         </div>
-      <div className="ml-auto flex items-center gap-2">
-        <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-        <ExpenseForm addExpense={addExpense} />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon" className="rounded-full">
-              <CircleUser className="h-5 w-5" />
-              <span className="sr-only">Toggle user menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+        <div className="ml-auto flex items-center gap-2">
+            <div className='hidden sm:flex items-center gap-2'>
+                <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
+                <ExpenseForm addExpense={addExpense} />
+            </div>
+            
+            <Sheet>
+                <SheetTrigger asChild>
+                    <Button variant="outline" size="icon" className="sm:hidden">
+                        <Menu className="h-5 w-5" />
+                        <span className="sr-only">Open menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                    <nav className="grid gap-6 text-lg font-medium">
+                        <Link
+                        href="#"
+                        className="flex items-center gap-2 text-lg font-semibold"
+                        >
+                            <Coins className="h-6 w-6 text-primary" />
+                            <span className="sr-only">SpendWise</span>
+                        </Link>
+                        <div className="flex flex-col gap-4">
+                            <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
+                            <ExpenseForm addExpense={addExpense} />
+                        </div>
+
+                    </nav>
+                </SheetContent>
+            </Sheet>
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" size="icon" className="rounded-full">
+                        <CircleUser className="h-5 w-5" />
+                        <span className="sr-only">Toggle user menu</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                    <DropdownMenuItem>Support</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>Logout</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
     </header>
   );
 }

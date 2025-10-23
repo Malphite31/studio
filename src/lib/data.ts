@@ -1,4 +1,4 @@
-import type { Expense, BudgetGoal, Category } from './types';
+import type { Expense, BudgetGoal, Category, WishlistItem } from './types';
 
 export const CATEGORIES = [
   'Groceries',
@@ -70,4 +70,10 @@ export const initialBudgetGoals: BudgetGoal[] = [
   { category: 'Housing', amount: 1500 },
   { category: 'Utilities', amount: 150 },
   { category: 'Other', amount: 100 },
+];
+
+export const initialWishlistItems: WishlistItem[] = [
+  { id: 'wish-1', name: 'New Laptop', targetAmount: 1200, savedAmount: 300 },
+  { id: 'wish-2', name: 'Vacation to Hawaii', targetAmount: 2500, savedAmount: 1500 },
+  { id: 'wish-3', name: 'Noise-Cancelling Headphones', targetAmount: 350, savedAmount: 350 },
 ];
