@@ -183,7 +183,7 @@ export function ExpenseForm({
   
   const TriggerButton = 
     triggerType === 'fab' ? (
-      <Button className="fixed bottom-4 right-4 h-16 w-16 rounded-full shadow-lg" size="icon">
+      <Button variant="default" className="fixed bottom-4 right-4 h-16 w-16 rounded-full shadow-lg" size="icon">
           <Plus className="h-6 w-6" />
           <span className="sr-only">Add Transaction</span>
       </Button>
