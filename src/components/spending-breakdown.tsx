@@ -81,7 +81,7 @@ export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) 
           className="mx-auto aspect-video max-h-[250px] sm:max-h-[300px]"
         >
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
+            <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="category"
