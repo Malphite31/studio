@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { Analytics } from '@vercel/analytics/next';
+import Footer from '@/components/footer';
 
 export const metadata: Metadata = {
   title: 'SpendWise',
@@ -25,7 +26,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased flex flex-col min-h-screen">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -33,8 +34,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <FirebaseClientProvider>
-            {children}
+            <div className="flex-grow">{children}</div>
             <Toaster />
+            <Footer />
           </FirebaseClientProvider>
         </ThemeProvider>
         <Analytics />
