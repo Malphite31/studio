@@ -16,6 +16,7 @@ import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-b
 import Login from '@/components/login';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { WelcomeDialog } from '@/components/welcome-dialog';
+import { ExpenseForm } from '@/components/expense-form';
 
 
 export default function DashboardPage() {
@@ -218,6 +219,9 @@ export default function DashboardPage() {
               </div>
           </div>
         </main>
+        <div className="sm:hidden">
+            <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} triggerType="fab" />
+        </div>
       </div>
     </>
   );

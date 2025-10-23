@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format, addDays } from 'date-fns';
-import { Calendar as CalendarIcon, PlusCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, PlusCircle, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -64,9 +64,10 @@ interface ExpenseFormProps {
   addExpense: (expense: Omit<Expense, 'id' | 'date' | 'userId'>) => void;
   addIou: (iou: Omit<Iou, 'id' | 'paid' | 'userId'>) => void;
   addIncome: (income: Omit<Income, 'id' | 'date' | 'userId'>) => void;
+  triggerType: 'button' | 'fab';
 }
 
-export function ExpenseForm({ addExpense, addIou, addIncome }: ExpenseFormProps) {
+export function ExpenseForm({ addExpense, addIou, addIncome, triggerType }: ExpenseFormProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
@@ -119,14 +120,23 @@ export function ExpenseForm({ addExpense, addIou, addIncome }: ExpenseFormProps)
     form.reset();
     setOpen(false);
   }
+  
+  const TriggerButton = triggerType === 'fab' ? (
+    <Button className="fixed bottom-4 right-4 h-16 w-16 rounded-full shadow-lg" size="icon">
+        <Plus className="h-6 w-6" />
+        <span className="sr-only">Add Transaction</span>
+    </Button>
+    ) : (
+    <Button>
+        <PlusCircle className="mr-2 h-4 w-4" />
+        Add Transaction
+    </Button>
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Transaction
-        </Button>
+        {TriggerButton}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

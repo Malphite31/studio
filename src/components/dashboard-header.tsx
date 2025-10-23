@@ -84,7 +84,7 @@ export default function DashboardHeader({
             <div className='hidden sm:flex items-center gap-2'>
                 <ThemeSwitcher />
                 <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-                <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} />
+                <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} triggerType="button" />
             </div>
             
             <Sheet>
@@ -96,7 +96,7 @@ export default function DashboardHeader({
                 </SheetTrigger>
                 <SheetContent side="left">
                     <SheetHeader>
-                        <SheetTitle className="sr-only">Menu</SheetTitle>
+                        <SheetTitle>Menu</SheetTitle>
                     </SheetHeader>
                     <div className="flex items-center gap-2 text-lg font-semibold mb-6">
                         <Coins className="h-6 w-6 text-primary" />
@@ -105,7 +105,6 @@ export default function DashboardHeader({
                     <nav className="grid gap-4 text-lg font-medium">
                         <ThemeSwitcher />
                         <BudgetForm budgetGoals={budgetGoals} updateBudgets={updateBudgets} />
-                        <ExpenseForm addExpense={addExpense} addIou={addIou} addIncome={addIncome} />
                     </nav>
                 </SheetContent>
             </Sheet>
