@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Expense, EWallet, UserProfile } from '@/lib/types';
+import type { Expense, EWallet } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import { CategoryIcons } from './icons';
 import { Timestamp } from 'firebase/firestore';
@@ -36,7 +36,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
 
-
 interface RecentExpensesProps {
   expenses: Expense[];
   onUpdateExpense: (expenseId: string, oldAmount: number, updatedData: Partial<Expense>) => void;
@@ -47,9 +46,9 @@ interface RecentExpensesProps {
 const formatCurrency = (amount: number) => 
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
 
-
 export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpense, wallets }: RecentExpensesProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
 
   const sortedExpenses = [...expenses].sort((a, b) => {
@@ -66,107 +65,111 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
     setIsEditOpen(true);
   };
   
-
   return (
     <>
-    <Card>
-      <CardHeader>
-        <div>
-          <CardTitle>Recent Transactions</CardTitle>
-          <CardDescription>
-            Here are your 10 most recent expenses.
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Expense</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {recentExpenses.length > 0 ? (
-              recentExpenses.map((expense) => {
-                const Icon = CategoryIcons[expense.category];
-                const expenseDate = expense.date instanceof Timestamp ? expense.date.toDate() : new Date();
-                return (
-                  <TableRow key={expense.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center justify-center w-8 h-8 bg-secondary rounded-full">
-                          <Icon className="h-4 w-4 text-muted-foreground" />
-                        </span>
-                        <div>
-                          <div className="font-medium">{expense.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {isValid(expenseDate) ? format(expenseDate, 'MMM d, yyyy') : 'Processing...'}
-                             {expense.paymentMethod && ` via ${expense.paymentMethod}`}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Recent Transactions</CardTitle>
+            <CardDescription>
+              Here are your 10 most recent expenses.
+            </CardDescription>
+          </div>
+          <Button variant="outline" onClick={() => setIsEditMode(!isEditMode)}>
+            {isEditMode ? 'Done' : 'Edit'}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Expense</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                {isEditMode && <TableHead className="text-right">Actions</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentExpenses.length > 0 ? (
+                recentExpenses.map((expense) => {
+                  const Icon = CategoryIcons[expense.category];
+                  const expenseDate = expense.date instanceof Timestamp ? expense.date.toDate() : new Date();
+                  return (
+                    <TableRow key={expense.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center justify-center w-8 h-8 bg-secondary rounded-full">
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                          </span>
+                          <div>
+                            <div className="font-medium">{expense.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {isValid(expenseDate) ? format(expenseDate, 'MMM d, yyyy') : 'Processing...'}
+                               {expense.paymentMethod && ` via ${expense.paymentMethod}`}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      -{formatCurrency(expense.amount)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <AlertDialog>
-                          <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onSelect={() => handleEditClick(expense)}>
-                                      <Pencil className="mr-2 h-4 w-4" />
-                                      Edit
-                                  </DropdownMenuItem>
-                                  <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
-                                          <Trash2 className="mr-2 h-4 w-4" />
-                                          Delete
-                                      </DropdownMenuItem>
-                                  </AlertDialogTrigger>
-                              </DropdownMenuContent>
-                          </DropdownMenu>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        -{formatCurrency(expense.amount)}
+                      </TableCell>
+                      {isEditMode && (
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onSelect={() => handleEditClick(expense)}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Edit
+                                    </DropdownMenuItem>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
 
-                           <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Are you sure you want to delete this expense? This will revert the amount from the associated wallet. This action cannot be undone.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={() => onDeleteExpense(expense)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                        Yes, Delete
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                       </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            ) : (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center py-8">
-                  No expenses logged yet.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-     {selectedExpense && (
+                            <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                          Are you sure you want to delete this expense? This will revert the amount from the associated wallet. This action cannot be undone.
+                                      </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                          onClick={() => onDeleteExpense(expense)}
+                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                          Yes, Delete
+                                      </AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={isEditMode ? 3 : 2} className="text-center py-8">
+                    No expenses logged yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      {selectedExpense && (
         <ExpenseForm
             triggerType='dialog'
             open={isEditOpen}
@@ -175,7 +178,7 @@ export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpe
             expenseToEdit={selectedExpense}
             onUpdate={onUpdateExpense}
         />
-     )}
+      )}
     </>
   );
 }
