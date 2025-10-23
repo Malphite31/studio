@@ -4,7 +4,7 @@ import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
@@ -48,6 +49,7 @@ export default function ProfilePage() {
   const [completedCrop, setCompletedCrop] = useState<Crop>();
   const [isCropModalOpen, setCropModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
 
@@ -102,24 +104,40 @@ export default function ProfilePage() {
     if (!completedCrop || !imgRef.current || !user) return;
 
     setIsUploading(true);
-    const croppedImage = await getCroppedImg(imgRef.current, completedCrop);
-    const storage = getStorage();
-    const storageRef = ref(storage, `profile-pictures/${user.uid}`);
-    
+    setUploadProgress(0);
+
     try {
-      await uploadString(storageRef, croppedImage, 'data_url');
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      if (userProfileRef) {
-          setDocumentNonBlocking(userProfileRef, { profilePicture: downloadURL }, { merge: true });
+      const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
+      if (!croppedImageBlob) {
+        throw new Error('Could not crop image.');
       }
       
-      toast({ title: 'Success', description: 'Profile picture updated!' });
+      const storage = getStorage();
+      const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+      const uploadTask = uploadBytesResumable(storageRef, croppedImageBlob);
+
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
+        (error) => {
+          toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
+          setIsUploading(false);
+        },
+        async () => {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            if (userProfileRef) {
+                setDocumentNonBlocking(userProfileRef, { profilePicture: downloadURL }, { merge: true });
+            }
+            toast({ title: 'Success', description: 'Profile picture updated!' });
+            setIsUploading(false);
+            setCropModalOpen(false);
+        }
+      );
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
-    } finally {
       setIsUploading(false);
-      setCropModalOpen(false);
     }
   };
 
@@ -266,10 +284,19 @@ export default function ProfilePage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCropModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCrop} disabled={isUploading}>
-              {isUploading ? 'Uploading...' : 'Save Picture'}
-            </Button>
+            {isUploading ? (
+              <div className="w-full">
+                <Progress value={uploadProgress} className="w-full" />
+                <p className="text-center text-sm mt-2">{Math.round(uploadProgress)}%</p>
+              </div>
+            ) : (
+            <>
+              <Button variant="outline" onClick={() => setCropModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleCrop}>
+                Save Picture
+              </Button>
+            </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -277,8 +304,8 @@ export default function ProfilePage() {
   );
 }
 
-function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
-  return new Promise((resolve, reject) => {
+function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<Blob | null> {
+  return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
@@ -292,7 +319,7 @@ function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
     canvas.height = cropHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      reject(new Error("Could not get 2d context from canvas"));
+      resolve(null);
       return;
     }
 
@@ -308,6 +335,10 @@ function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
       cropHeight
     );
 
-    resolve(canvas.toDataURL('image/jpeg'));
+    canvas.toBlob((blob) => {
+      resolve(blob);
+    }, 'image/jpeg');
   });
 }
+
+    
