@@ -4,7 +4,7 @@ import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, serverTimestamp, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, type UploadTaskSnapshot } from 'firebase/storage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,6 +45,7 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
   const [isResetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -95,29 +96,36 @@ export default function ProfilePage() {
   };
 
 
-  const handleDirectUpload = async (file: File) => {
+  const handleDirectUpload = (file: File) => {
     if (!user) return;
   
     setIsUploading(true);
+    setUploadProgress(0);
   
-    try {
-      const storage = getStorage();
-      const storageRef = ref(storage, `profile-pictures/${user.uid}`);
-      
-      await uploadBytes(storageRef, file);
-      
-      const downloadURL = await getDownloadURL(storageRef);
-      if (userProfileRef) {
-        setDocumentNonBlocking(userProfileRef, { profilePicture: downloadURL }, { merge: true });
-      }
-      
-      toast({ title: 'Success', description: 'Profile picture updated!' });
-    } catch (error: any) {
-      console.error("Upload failed:", error);
-      toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
-    } finally {
-      setIsUploading(false);
-    }
+    const storage = getStorage();
+    const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on('state_changed',
+        (snapshot: UploadTaskSnapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(progress);
+        },
+        (error) => {
+            console.error("Upload failed:", error);
+            toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
+            setIsUploading(false);
+        },
+        () => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                if (userProfileRef) {
+                    setDocumentNonBlocking(userProfileRef, { profilePicture: downloadURL }, { merge: true });
+                }
+                toast({ title: 'Success', description: 'Profile picture updated!' });
+                setIsUploading(false);
+            });
+        }
+    );
   };
 
   const onSubmit = async (data: z.infer<typeof profileSchema>) => {
@@ -304,9 +312,9 @@ export default function ProfilePage() {
                         <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     {isUploading ? (
-                         <div className="w-full max-w-xs text-center">
-                            <p className="text-sm">Uploading...</p>
-                            <Progress value={100} className="w-full animate-pulse mt-2" />
+                         <div className="w-full max-w-xs text-center relative mt-2">
+                            <Progress value={uploadProgress} className="w-full" />
+                            <p className="text-sm absolute w-full top-0">{Math.round(uploadProgress)}%</p>
                         </div>
                     ) : (
                         <div className='flex flex-col items-center gap-1'>
