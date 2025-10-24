@@ -82,8 +82,8 @@ export function BudgetForm({ budgetGoals, updateBudgets }: BudgetFormProps) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <ScrollArea className="h-72 pr-6">
-                <div className="space-y-4 py-4">
+            <ScrollArea className="h-72">
+                <div className="space-y-4 p-4">
                 {CATEGORIES.map((category) => (
                     <FormField
                     key={category}
