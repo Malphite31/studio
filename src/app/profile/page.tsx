@@ -231,12 +231,14 @@ export default function ProfilePage() {
             
             const collectionsToManage = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
 
+            // First, delete all existing data in a separate batch or before import
             for (const collectionName of collectionsToManage) {
                 const collectionRef = collection(firestore, 'users', user.uid, collectionName);
                 const snapshot = await getDocs(collectionRef);
                 snapshot.docs.forEach(doc => batch.delete(doc.ref));
             }
             
+            // Then, add the new data
             for (const collectionName in data) {
                 if (collectionsToManage.includes(collectionName)) {
                     const collectionData = data[collectionName];
@@ -304,8 +306,8 @@ export default function ProfilePage() {
                 <div 
                 className={cn(
                     "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
-                    "hover:border-primary hover:bg-accent",
-                    isDragging ? "border-primary bg-accent" : "border-input"
+                    "hover:border-primary hover:bg-accent/10",
+                    isDragging ? "border-primary bg-accent/10" : "border-input"
                 )}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
