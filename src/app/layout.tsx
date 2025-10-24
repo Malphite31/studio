@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import Footer from '@/components/footer';
 
 export const metadata: Metadata = {
@@ -40,6 +41,7 @@ export default function RootLayout({
           </FirebaseClientProvider>
         </ThemeProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
