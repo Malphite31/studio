@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
 import { PlusCircle, Settings, Gift, Coins } from "lucide-react";
-import { Button } from "./ui/button";
 
 export function TourGuide() {
     
@@ -43,7 +42,7 @@ export function TourGuide() {
           <CarouselItem key={index}>
             <div className="p-1">
               <Card className="border-none shadow-none">
-                <CardContent className="flex flex-col items-center justify-center p-6 text-center gap-4">
+                <CardContent className="flex flex-col items-center p-6 text-center gap-4">
                   {feature.icon}
                   <h3 className="text-xl font-semibold">{feature.title}</h3>
                   <p className="text-sm text-muted-foreground">{feature.description}</p>
