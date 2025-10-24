@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
+import { PasswordStrengthMeter } from './password-strength-meter';
 
 
 const formSchema = z.object({
@@ -36,6 +37,8 @@ export default function Login() {
     resolver: zodResolver(formSchema),
     defaultValues: { email: '', password: '' },
   });
+
+  const password = form.watch('password');
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -147,6 +150,7 @@ export default function Login() {
                   </FormItem>
                 )}
               />
+               {isSignUp && password && <PasswordStrengthMeter password={password} />}
               <Button type="submit" className="w-full">
                 {isSignUp ? 'Sign Up' : 'Sign In'}
               </Button>
