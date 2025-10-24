@@ -346,5 +346,11 @@
       "schema": "EWallet",
       "description": "Stores E-Wallet information for a specific user."
     }
+  },
+  "storage": {
+    "/profile-pictures/{userId}": {
+      "description": "Stores user profile pictures. The filename should match the user's UID."
+    }
   }
 }
+    
