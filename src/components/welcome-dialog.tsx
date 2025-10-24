@@ -42,7 +42,7 @@ export function WelcomeDialog({ open, onOpenChange, userProfile }: WelcomeDialog
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[calc(100%-2rem)] sm:w-full">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-center text-2xl">{welcomeMessage}</DialogTitle>
         </DialogHeader>
