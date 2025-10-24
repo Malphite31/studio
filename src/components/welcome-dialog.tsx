@@ -34,7 +34,7 @@ export function WelcomeDialog({ open, onOpenChange }: WelcomeDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-center text-2xl">Welcome to SpendWise!</DialogTitle>
         </DialogHeader>
