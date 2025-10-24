@@ -4,7 +4,6 @@ import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, serverTimestamp, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL, type UploadTaskSnapshot } from 'firebase/storage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,11 +14,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
-import { ArrowLeft, UploadCloud } from 'lucide-react';
+import { ArrowLeft, User } from 'lucide-react';
 import type { UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -42,11 +40,7 @@ export default function ProfilePage() {
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
   const [isResetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [fileToImport, setFileToImport] = useState<File | null>(null);
@@ -60,74 +54,6 @@ export default function ProfilePage() {
       bio: userProfile?.bio || '',
     },
   });
-
-  const handleFileSelect = (file: File) => {
-    if (!user) return;
-    if (file && file.type.startsWith('image/')) {
-        handleDirectUpload(file);
-    } else {
-        toast({ variant: 'destructive', title: 'Invalid file type', description: 'Please select an image file.' });
-    }
-  };
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFileSelect(e.target.files[0]);
-    }
-  };
-  
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setIsDragging(true);
-    } else if (e.type === "dragleave") {
-      setIsDragging(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileSelect(e.dataTransfer.files[0]);
-      e.dataTransfer.clearData();
-    }
-  };
-
-
-  const handleDirectUpload = (file: File) => {
-    if (!user) return;
-  
-    setIsUploading(true);
-    setUploadProgress(0);
-  
-    const storage = getStorage();
-    const storageRef = ref(storage, `profile-pictures/${user.uid}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on('state_changed',
-        (snapshot: UploadTaskSnapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setUploadProgress(progress);
-        },
-        (error) => {
-            console.error("Upload failed:", error);
-            toast({ variant: 'destructive', title: 'Upload failed', description: error.message });
-            setIsUploading(false);
-        },
-        () => {
-            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                if (userProfileRef) {
-                    setDocumentNonBlocking(userProfileRef, { profilePicture: downloadURL }, { merge: true });
-                }
-                toast({ title: 'Success', description: 'Profile picture updated!' });
-                setIsUploading(false);
-            });
-        }
-    );
-  };
 
   const onSubmit = async (data: z.infer<typeof profileSchema>) => {
     if (!user || !userProfileRef) return;
@@ -300,40 +226,19 @@ export default function ProfilePage() {
             <Card>
             <CardHeader>
                 <CardTitle>Your Profile</CardTitle>
-                <CardDescription>Manage your account settings, profile picture and bio.</CardDescription>
+                <CardDescription>Manage your account settings and personal information.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div 
-                className={cn(
-                    "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
-                    "hover:border-primary hover:bg-accent/10",
-                    isDragging ? "border-primary bg-accent/10" : "border-input"
-                )}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                >
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
-                <div className="flex flex-col items-center gap-4">
+                <div className="flex items-center gap-4">
                     <Avatar className="h-24 w-24">
-                        <AvatarImage src={userProfile?.profilePicture} />
-                        <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>
+                            <User className="h-12 w-12 text-muted-foreground" />
+                        </AvatarFallback>
                     </Avatar>
-                    {isUploading ? (
-                         <div className="w-full max-w-xs text-center relative mt-2">
-                            <Progress value={uploadProgress} className="w-full" />
-                            <p className="text-sm absolute w-full top-0">{Math.round(uploadProgress)}%</p>
-                        </div>
-                    ) : (
-                        <div className='flex flex-col items-center gap-1'>
-                            <UploadCloud className="w-8 h-8 text-muted-foreground" />
-                            <p className='font-semibold'>Drag & drop or click to upload</p>
-                            <p className='text-sm text-muted-foreground'>A new profile picture will be uploaded directly.</p>
-                        </div>
-                    )}
-                </div>
+                    <div>
+                        <h2 className="text-2xl font-bold">{userProfile?.name || userProfile?.username}</h2>
+                        <p className="text-muted-foreground">{user?.email}</p>
+                    </div>
                 </div>
 
                 <Form {...form}>

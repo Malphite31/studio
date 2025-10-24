@@ -23,11 +23,6 @@
           "description": "The user's email address.",
           "format": "email"
         },
-        "profilePicture": {
-          "type": "string",
-          "description": "URL or path to the user's profile picture.",
-          "format": "uri"
-        },
         "bio": {
           "type": "string",
           "description": "A short bio or description about the user."
@@ -347,10 +342,6 @@
       "description": "Stores E-Wallet information for a specific user."
     }
   },
-  "storage": {
-    "/profile-pictures/{userId}": {
-      "description": "Stores user profile pictures. The filename should match the user's UID."
-    }
-  }
+  "storage": {}
 }
     

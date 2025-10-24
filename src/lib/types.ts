@@ -47,7 +47,6 @@ export interface UserProfile {
     name?: string;
     username: string;
     email: string;
-    profilePicture?: string;
     bio?: string;
 }
 

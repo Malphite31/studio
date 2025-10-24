@@ -147,12 +147,7 @@ export default function DashboardHeader({
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="rounded-full">
-                        <Avatar>
-                            <AvatarImage src={userProfile?.profilePicture || undefined} alt="@shadcn" />
-                            <AvatarFallback>
-                                {user?.email?.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
+                        <CircleUser className="h-5 w-5" />
                         <span className="sr-only">Toggle user menu</span>
                     </Button>
                 </DropdownMenuTrigger>
