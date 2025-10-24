@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { doc, serverTimestamp } from 'firebase/firestore';
@@ -41,12 +41,15 @@ export default function Login() {
         const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
         if(user) {
+            const username = user.email?.split('@')[0] || `user${Math.floor(Math.random() * 10000)}`;
+            await updateProfile(user, { displayName: username });
+
             const userProfileRef = doc(firestore, 'users', user.uid);
             // Create a complete UserProfile object matching the schema
             setDocumentNonBlocking(userProfileRef, {
                 id: user.uid,
                 email: user.email,
-                username: user.email?.split('@')[0] || 'new-user',
+                username: username,
                 createdAt: serverTimestamp(),
             }, { merge: true });
         }

@@ -27,6 +27,7 @@ import { ConfirmationDialog } from '@/components/confirmation-dialog';
 
 
 const profileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
   username: z.string().min(3, 'Username must be at least 3 characters').optional(),
   bio: z.string().max(160, 'Bio cannot be longer than 160 characters').optional(),
 });
@@ -54,6 +55,7 @@ export default function ProfilePage() {
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     values: {
+      name: userProfile?.name || '',
       username: userProfile?.username || '',
       bio: userProfile?.bio || '',
     },
@@ -132,13 +134,20 @@ export default function ProfilePage() {
     
     try {
         const updateData: Partial<UserProfile> = {};
+        if (data.name) updateData.name = data.name;
         if (data.username) updateData.username = data.username;
         if (data.bio) updateData.bio = data.bio;
 
         await setDocumentNonBlocking(userProfileRef, updateData, { merge: true });
         
-        if(auth.currentUser && data.username && auth.currentUser.displayName !== data.username) {
-            await updateProfile(auth.currentUser, { displayName: data.username });
+        if(auth.currentUser) {
+            const profileUpdates: { displayName?: string } = {};
+            if (data.username && auth.currentUser.displayName !== data.username) {
+                profileUpdates.displayName = data.username;
+            }
+            if (Object.keys(profileUpdates).length > 0) {
+                 await updateProfile(auth.currentUser, profileUpdates);
+            }
         }
         toast({ title: 'Success', description: 'Profile updated!' });
     } catch (error: any) {
@@ -327,6 +336,19 @@ export default function ProfilePage() {
 
                 <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Your full name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
                     <FormField
                     control={form.control}
                     name="username"
