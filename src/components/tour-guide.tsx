@@ -17,7 +17,7 @@ export function TourGuide() {
     {
       icon: <Coins className="h-12 w-12 text-primary mx-auto" />,
       title: "Take Control of Your Finances",
-      description: "SpendWise is here to help you track your spending, manage budgets, and save for your dreams.",
+      description: "PennyWise is here to help you track your spending, manage budgets, and save for your dreams.",
     },
     {
       icon: <PlusCircle className="h-12 w-12 text-primary mx-auto" />,

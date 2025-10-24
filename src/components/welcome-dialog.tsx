@@ -36,7 +36,7 @@ export function WelcomeDialog({ open, onOpenChange }: WelcomeDialogProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-center text-2xl">Welcome to SpendWise!</DialogTitle>
+          <DialogTitle className="text-center text-2xl">Welcome to PennyWise!</DialogTitle>
         </DialogHeader>
         
         <TourGuide />

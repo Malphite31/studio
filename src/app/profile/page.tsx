@@ -190,7 +190,7 @@ export default function ProfilePage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'spendwise_backup.json';
+        a.download = 'pennywise_backup.json';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

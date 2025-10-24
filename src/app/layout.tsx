@@ -7,7 +7,7 @@ import { Analytics } from '@vercel/analytics/next';
 import Footer from '@/components/footer';
 
 export const metadata: Metadata = {
-  title: 'SpendWise',
+  title: 'PennyWise',
   description: 'Intelligent budgeting and expense tracking.',
 };
 

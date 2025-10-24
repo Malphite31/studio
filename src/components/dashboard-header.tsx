@@ -72,7 +72,7 @@ export default function DashboardHeader({
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 z-30">
         <div className="flex items-center gap-4 font-semibold">
           <Coins className="h-6 w-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full p-0.5" />
-          <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>SpendWise</span>
+          <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>PennyWise</span>
            {(userProfile?.name || userProfile?.username) && (
               <div className='hidden md:block'>
                   <span className='text-muted-foreground font-normal'>|</span>
@@ -113,7 +113,7 @@ export default function DashboardHeader({
                     <SheetHeader>
                          <SheetTitle className="flex items-center gap-2 text-lg font-semibold mb-2">
                             <Coins className="h-6 w-6 text-primary" />
-                            <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>SpendWise</span>
+                            <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>PennyWise</span>
                         </SheetTitle>
                         <SheetDescription>
                             Your personal finance dashboard.
