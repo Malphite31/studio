@@ -42,19 +42,21 @@ export function WelcomeDialog({ open, onOpenChange, userProfile }: WelcomeDialog
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent>
+      <DialogContent className="flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl">{welcomeMessage}</DialogTitle>
         </DialogHeader>
         
-        <TourGuide />
+        <div className='flex-grow flex items-center justify-center'>
+            <TourGuide />
+        </div>
         
-        <DialogFooter className="sm:justify-between items-center pt-4">
+        <DialogFooter className="flex-col sm:flex-col sm:justify-between items-center pt-4 gap-4">
           <div className="flex items-center space-x-2">
             <Checkbox id="hide-welcome" checked={hideWelcome} onCheckedChange={(checked) => setHideWelcome(checked as boolean)} />
             <Label htmlFor="hide-welcome" className="text-sm font-normal">Don't show this again</Label>
           </div>
-          <Button onClick={handleClose}>Get Started</Button>
+          <Button onClick={handleClose} className="w-full sm:w-auto">Get Started</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
