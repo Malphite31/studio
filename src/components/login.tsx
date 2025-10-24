@@ -19,6 +19,8 @@ import { useFirestore } from '@/firebase/provider';
 const formSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
+  name: z.string().optional(),
+  username: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -38,18 +40,22 @@ export default function Login() {
   const onSubmit = async (data: FormValues) => {
     try {
       if (isSignUp) {
+        if (!data.name || !data.username) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please fill in all fields.' });
+            return;
+        }
+
         const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
         if(user) {
-            const username = user.email?.split('@')[0] || `user${Math.floor(Math.random() * 10000)}`;
-            await updateProfile(user, { displayName: username });
+            await updateProfile(user, { displayName: data.username });
 
             const userProfileRef = doc(firestore, 'users', user.uid);
-            // Create a complete UserProfile object matching the schema
             setDocumentNonBlocking(userProfileRef, {
                 id: user.uid,
                 email: user.email,
-                username: username,
+                name: data.name,
+                username: data.username,
                 createdAt: serverTimestamp(),
             }, { merge: true });
         }
@@ -74,6 +80,36 @@ export default function Login() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {isSignUp && (
+                <>
+                    <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Full Name</FormLabel>
+                            <FormControl>
+                            <Input placeholder="John Doe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="username"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                            <Input placeholder="johndoe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </>
+              )}
               <FormField
                 control={form.control}
                 name="email"
