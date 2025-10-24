@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { Expense as ExpenseType, BudgetGoal, Category, WishlistItem as WishlistItemType, Iou as IouType, Income as IncomeType, EWallet } from '@/lib/types';
+import type { Expense as ExpenseType, BudgetGoal, Category, WishlistItem as WishlistItemType, Iou as IouType, Income as IncomeType, EWallet, UserProfile } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard-header';
 import RecentExpenses from '@/components/recent-expenses';
 import SpendingBreakdown from '@/components/spending-breakdown';
@@ -10,7 +10,7 @@ import Wishlist from '@/components/wishlist';
 import DebtTracker from '@/components/debt-tracker';
 import IncomeTracker from '@/components/income-tracker';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, serverTimestamp, query, where, runTransaction, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, query, where, runTransaction, writeBatch, deleteDoc, getDocs } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Login from '@/components/login';
@@ -20,6 +20,7 @@ import { ExpenseForm } from '@/components/expense-form';
 import EWallets from '@/components/e-wallets';
 import { useToast } from '@/hooks/use-toast';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 
 export default function DashboardPage() {
@@ -27,6 +28,9 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const [showWelcome, setShowWelcome] = useState(false);
   const { toast } = useToast();
+
+  const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
     if (user) {
@@ -453,7 +457,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <WelcomeDialog open={showWelcome} onOpenChange={setShowWelcome} />
+      <WelcomeDialog open={showWelcome} onOpenChange={setShowWelcome} userProfile={userProfile} />
       <div className="flex min-h-screen w-full flex-col bg-background">
         <DashboardHeader
           balance={balance}
