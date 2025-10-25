@@ -17,12 +17,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
-import { ArrowLeft, User, Download } from 'lucide-react';
-import type { UserProfile, ReportData, BudgetGoal } from '@/lib/types';
+import { ArrowLeft, User, Download, FileSpreadsheet } from 'lucide-react';
+import type { UserProfile, ReportData, BudgetGoal, Expense, Income, Iou, WishlistItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
-import { addDays, startOfMonth, isWithinInterval } from 'date-fns';
+import { addDays, startOfMonth, isWithinInterval, format, isValid } from 'date-fns';
 import { CATEGORIES, CASH_ON_HAND_WALLET } from '@/lib/data';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { TransactionReportDialog } from '@/components/transaction-report-dialog';
@@ -377,6 +377,98 @@ export default function ProfilePage() {
     setTimeout(() => window.print(), 500);
   };
   
+    const handleSpreadsheetExport = () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to export data.' });
+            return;
+        }
+        toast({ title: 'Exporting...', description: 'Gathering your data for spreadsheet export.' });
+
+        const escapeCsvCell = (cell: any) => {
+            if (cell === null || cell === undefined) {
+                return '';
+            }
+            const stringCell = String(cell);
+            if (stringCell.includes(',')) {
+                return `"${stringCell.replace(/"/g, '""')}"`;
+            }
+            return stringCell;
+        };
+
+        const formatDateForCsv = (date: Date | Timestamp | undefined) => {
+            if (!date) return '';
+            const d = date instanceof Timestamp ? date.toDate() : date;
+            return isValid(d) ? format(d, 'yyyy-MM-dd HH:mm:ss') : '';
+        };
+
+        let csvContent = '';
+
+        // Function to create a CSV section from an array of objects
+        const createCsvSection = (title: string, data: any[], headers: string[], rowMapper: (item: any) => any[]) => {
+            csvContent += `${title}\r\n`;
+            csvContent += headers.map(escapeCsvCell).join(',') + '\r\n';
+            data.forEach(item => {
+                const row = rowMapper(item);
+                csvContent += row.map(escapeCsvCell).join(',') + '\r\n';
+            });
+            csvContent += '\r\n'; // Add a blank line between sections
+        };
+
+        // Income
+        if (income?.length) {
+            createCsvSection('Income', income, ['Date', 'Source', 'Amount', 'Wallet'], (item: Income) => [
+                formatDateForCsv(item.date),
+                item.name,
+                item.amount,
+                allWallets.find(w => w.id === item.walletId)?.name || 'N/A'
+            ]);
+        }
+
+        // Expenses
+        if (expenses?.length) {
+            createCsvSection('Expenses', expenses, ['Date', 'Description', 'Category', 'Amount', 'Payment Method'], (item: Expense) => [
+                formatDateForCsv(item.date),
+                item.name,
+                item.category,
+                item.amount,
+                item.paymentMethod || 'N/A'
+            ]);
+        }
+        
+        // Debts & Loans
+        if (ious?.length) {
+            createCsvSection('Debts & Loans', ious, ['Name', 'Type', 'Amount', 'Due Date', 'Status'], (item: Iou) => [
+                item.name,
+                item.type,
+                item.amount,
+                formatDateForCsv(item.dueDate),
+                item.paid ? 'Paid' : 'Unpaid'
+            ]);
+        }
+
+        // Wishlist
+        if (wishlistItems?.length) {
+            createCsvSection('Wishlist', wishlistItems, ['Item', 'Target Amount', 'Saved Amount', 'Progress (%)', 'Status'], (item: WishlistItem) => [
+                item.name,
+                item.targetAmount,
+                item.savedAmount,
+                ((item.savedAmount / item.targetAmount) * 100).toFixed(0),
+                item.purchased ? 'Purchased' : 'Saving'
+            ]);
+        }
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'pennywise_export.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast({ title: 'Export Complete!', description: 'Your CSV file has been downloaded.' });
+    };
+
 
   if (isProfileLoading) return <div>Loading profile...</div>
 
@@ -487,6 +579,7 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
                      <Button variant="outline" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export My Data</Button>
+                     <Button variant="outline" onClick={handleSpreadsheetExport}><FileSpreadsheet className="mr-2 h-4 w-4" />Export to Spreadsheet</Button>
                      <Button variant="outline" onClick={() => importFileInputRef.current?.click()}>Import Data</Button>
                      <Button variant="secondary" onClick={handleSeedData}>Seed Dummy Data</Button>
                      <Button variant="destructive" onClick={() => setResetConfirmOpen(true)}>Reset Data</Button>
