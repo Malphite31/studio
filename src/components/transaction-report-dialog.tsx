@@ -35,7 +35,6 @@ const reportSchema = z.object({
   dateRange: z.custom<DateRange>().optional(),
   includeIncome: z.boolean().default(true),
   includeWishlist: z.boolean().default(false),
-  includeIous: z.boolean().default(false),
   includeBudget: z.boolean().default(false),
   printAll: z.boolean().default(false),
 }).refine(data => data.printAll || (data.dateRange?.from && data.dateRange?.to), {
@@ -47,7 +46,7 @@ const reportSchema = z.object({
 interface TransactionReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onGenerate: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeWishlist: boolean, includeIous: boolean, includeBudget: boolean, printAll: boolean; }) => void;
+  onGenerate: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeWishlist: boolean, includeBudget: boolean, printAll: boolean; }) => void;
 }
 
 export function TransactionReportDialog({ open, onOpenChange, onGenerate }: TransactionReportDialogProps) {
@@ -62,7 +61,6 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
       },
       includeIncome: true,
       includeWishlist: false,
-      includeIous: false,
       includeBudget: false,
       printAll: false,
     },
@@ -71,7 +69,7 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
   const printAll = form.watch('printAll');
 
   function onSubmit(values: z.infer<typeof reportSchema>) {
-    const { dateRange, includeIncome, includeWishlist, includeIous, includeBudget, printAll } = values;
+    const { dateRange, includeIncome, includeWishlist, includeBudget, printAll } = values;
 
     if (!printAll && (!dateRange?.from || !dateRange?.to)) {
       toast({
@@ -90,7 +88,6 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
             endDate: dateRange?.to || new Date(),
             includeIncome,
             includeWishlist,
-            includeIous,
             includeBudget,
             printAll,
         });
@@ -198,20 +195,6 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
                           </FormControl>
                           <div className="space-y-1 leading-none">
                               <FormLabel>Wishlist Items</FormLabel>
-                          </div>
-                      </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="includeIous"
-                  render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                          <FormControl>
-                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                              <FormLabel>Debts &amp; Loans (IOUs)</FormLabel>
                           </div>
                       </FormItem>
                   )}

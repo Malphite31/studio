@@ -451,15 +451,14 @@ export default function DashboardPage() {
 
     const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toDate() : date);
 
-    const handleGenerateReport = (options: { startDate: Date, endDate: Date, includeIncome: boolean, includeWishlist: boolean, includeIous: boolean, includeBudget: boolean, printAll: boolean }) => {
-        const { startDate, endDate, includeIncome, includeWishlist, includeIous, includeBudget, printAll } = options;
+    const handleGenerateReport = (options: { startDate: Date, endDate: Date, includeIncome: boolean, includeWishlist: boolean, includeBudget: boolean, printAll: boolean }) => {
+        const { startDate, endDate, includeIncome, includeWishlist, includeBudget, printAll } = options;
 
         const dateInterval = { start: startDate, end: endDate };
 
         const filteredExpenses = printAll ? expenses || [] : expenses?.filter(e => isWithinInterval(toDate(e.date), dateInterval)) || [];
         const filteredIncome = (includeIncome && printAll) ? income || [] : includeIncome ? income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) : [];
         const filteredWishlist = (includeWishlist && printAll) ? wishlistItems || [] : includeWishlist ? wishlistItems : [];
-        const filteredIous = (includeIous && printAll) ? ious || [] : includeIous ? ious?.filter(i => isWithinInterval(toDate(i.dueDate), dateInterval)) : [];
         const filteredBudgets = includeBudget ? budgetGoals : [];
         
         const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -469,7 +468,6 @@ export default function DashboardPage() {
             expenses: filteredExpenses,
             income: filteredIncome || [],
             wishlist: filteredWishlist,
-            ious: filteredIous,
             budgetGoals: filteredBudgets,
             summary: {
                 totalIncome: totalIncome,

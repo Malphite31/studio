@@ -42,7 +42,7 @@ interface DashboardHeaderProps {
   budgetGoals: BudgetGoal[];
   updateBudgets: (updatedGoals: Record<Category, number>) => void;
   wallets: EWallet[];
-  onGenerateReport: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeWishlist: boolean; includeIous: boolean; includeBudget: boolean; printAll: boolean; }) => void;
+  onGenerateReport: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeWishlist: boolean; includeBudget: boolean; printAll: boolean; }) => void;
 }
 
 const formatCurrency = (amount: number) => 

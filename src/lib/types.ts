@@ -83,7 +83,6 @@ export interface ReportData {
   expenses: Expense[];
   income: Income[];
   wishlist: WishlistItem[];
-  ious: Iou[];
   budgetGoals: BudgetGoal[];
   summary: {
     totalIncome: number;
