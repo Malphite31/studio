@@ -155,8 +155,8 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
         
         {/* Income Section */}
         {income.length > 0 &&
-            <div className="print-table-section page-break-before">
-            <h2 className="text-lg font-semibold mb-2">Income</h2>
+            <div className="print-table-section">
+            <h2 className="text-lg font-semibold mb-2 mt-4">Income</h2>
             <Table className="print-table">
                 <TableHeader className="print-header">
                 <TableRow>
@@ -188,7 +188,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
         {/* IOU Section */}
         {ious.length > 0 &&
-            <div className="page-break-before">
+            <div>
                 <IouTable title="Debts (Money You Borrowed)" items={ious.filter(i => i.type === 'Borrow')} />
                 <IouTable title="Loans (Money You Lent)" items={ious.filter(i => i.type === 'Lent')} />
             </div>
