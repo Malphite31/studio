@@ -451,14 +451,15 @@ export default function DashboardPage() {
 
     const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toDate() : date);
 
-    const handleGenerateReport = (options: { startDate: Date, endDate: Date, includeIncome: boolean, includeIous: boolean }) => {
-        const { startDate, endDate, includeIncome, includeIous } = options;
+    const handleGenerateReport = (options: { startDate: Date, endDate: Date, includeIncome: boolean, includeIous: boolean, includeWishlist: boolean, printAll: boolean }) => {
+        const { startDate, endDate, includeIncome, includeIous, includeWishlist, printAll } = options;
 
         const dateInterval = { start: startDate, end: endDate };
 
-        const filteredExpenses = expenses?.filter(e => isWithinInterval(toDate(e.date), dateInterval)) || [];
-        const filteredIncome = includeIncome ? income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) : [];
-        const filteredIous = includeIous ? ious?.filter(i => isWithinInterval(toDate(i.dueDate), dateInterval)) : [];
+        const filteredExpenses = printAll ? expenses || [] : expenses?.filter(e => isWithinInterval(toDate(e.date), dateInterval)) || [];
+        const filteredIncome = (includeIncome && printAll) ? income || [] : includeIncome ? income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) : [];
+        const filteredIous = (includeIous && printAll) ? ious || [] : includeIous ? ious?.filter(i => isWithinInterval(toDate(i.dueDate), dateInterval)) : [];
+        const filteredWishlist = (includeWishlist && printAll) ? wishlistItems || [] : includeWishlist ? wishlistItems : [];
         
         const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
         const totalIncome = filteredIncome?.reduce((sum, i) => sum + i.amount, 0) || 0;
@@ -467,6 +468,7 @@ export default function DashboardPage() {
             expenses: filteredExpenses,
             income: filteredIncome || [],
             ious: filteredIous || [],
+            wishlist: filteredWishlist,
             summary: {
                 totalIncome: totalIncome,
                 totalExpenses: totalExpenses,
@@ -475,7 +477,8 @@ export default function DashboardPage() {
             dateRange: {
                 startDate,
                 endDate
-            }
+            },
+            printAll,
         });
 
         setTimeout(() => window.print(), 500); // Allow state to update

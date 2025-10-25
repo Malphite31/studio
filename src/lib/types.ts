@@ -81,6 +81,7 @@ export interface ReportData {
   expenses: Expense[];
   income: Income[];
   ious: Iou[];
+  wishlist: WishlistItem[];
   summary: {
     totalIncome: number;
     totalExpenses: number;
@@ -90,4 +91,5 @@ export interface ReportData {
     startDate: Date;
     endDate: Date;
   };
+  printAll: boolean;
 }

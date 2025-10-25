@@ -17,13 +17,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
-import { ArrowLeft, User } from 'lucide-react';
-import type { UserProfile } from '@/lib/types';
+import { ArrowLeft, User, Download } from 'lucide-react';
+import type { UserProfile, ReportData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
-import { addDays, startOfMonth } from 'date-fns';
+import { addDays, startOfMonth, isWithinInterval } from 'date-fns';
 import { CATEGORIES, CASH_ON_HAND_WALLET } from '@/lib/data';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { TransactionReportDialog } from '@/components/transaction-report-dialog';
+import TransactionReport from '@/components/transaction-report';
+import { Timestamp } from 'firebase/firestore';
 
 
 const profileSchema = z.object({
@@ -38,9 +42,24 @@ export default function ProfilePage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  const expensesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'expenses') : null, [user, firestore]);
+  const { data: expenses } = useCollection(expensesQuery);
+  const incomeQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'income') : null, [user, firestore]);
+  const { data: income } = useCollection(incomeQuery);
+  const iousQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'ious') : null, [user, firestore]);
+  const { data: ious } = useCollection(iousQuery);
+  const wishlistQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'wishlist') : null, [user, firestore]);
+  const { data: wishlistItems } = useCollection(wishlistQuery);
+  const walletsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'wallets') : null, [user, firestore]);
+  const { data: wallets } = useCollection(walletsQuery);
+  
+  const allWallets = useMemo(() => [CASH_ON_HAND_WALLET, ...(wallets || [])], [wallets]);
   
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
@@ -223,9 +242,23 @@ export default function ProfilePage() {
         const now = new Date();
         const startOfThisMonth = startOfMonth(now);
 
-        // Sample E-Wallet
+        // Clear existing data first
+        const collectionsToReset = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
+        for (const collectionName of collectionsToReset) {
+            const collectionRef = collection(firestore, 'users', userId, collectionName);
+            const snapshot = await getDocs(collectionRef);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        }
+        await batch.commit(); // Commit the deletions before adding new data
+        
+        const newBatch = writeBatch(firestore); // Start a new batch for additions
+
+        // Sample E-Wallets
         const gcashWalletRef = doc(collection(firestore, 'users', userId, 'wallets'));
-        batch.set(gcashWalletRef, { name: 'GCash', balance: 1500, userId });
+        newBatch.set(gcashWalletRef, { name: 'GCash', balance: 1500, userId });
+        const paymayaWalletRef = doc(collection(firestore, 'users', userId, 'wallets'));
+        newBatch.set(paymayaWalletRef, { name: 'PayMaya', balance: 800, userId });
+
 
         // Sample Income
         const incomeData = [
@@ -234,7 +267,7 @@ export default function ProfilePage() {
         ];
         incomeData.forEach(inc => {
             const incomeRef = doc(collection(firestore, 'users', userId, 'income'));
-            batch.set(incomeRef, { ...inc, userId });
+            newBatch.set(incomeRef, { ...inc, userId });
         });
         
         // Sample Expenses
@@ -244,57 +277,93 @@ export default function ProfilePage() {
             { name: 'Movie Night', amount: 1200, category: 'Entertainment', date: addDays(startOfThisMonth, 4), walletId: gcashWalletRef.id, paymentMethod: 'GCash' },
             { name: 'Electricity Bill', amount: 2500, category: 'Bills', date: addDays(startOfThisMonth, 5), walletId: 'cash' },
             { name: 'Apartment Rent', amount: 15000, category: 'Housing', date: addDays(startOfThisMonth, 6), walletId: 'cash' },
-            { name: 'Internet Bill', amount: 1800, category: 'Utilities', date: addDays(startOfThisMonth, 7), walletId: gcashWalletRef.id, paymentMethod: 'GCash' },
+            { name: 'Internet Bill', amount: 1800, category: 'Utilities', date: addDays(startOfThisMonth, 7), walletId: paymayaWalletRef.id, paymentMethod: 'PayMaya' },
             { name: 'Lunch with friends', amount: 800, category: 'Groceries', date: addDays(startOfThisMonth, 8), walletId: 'cash' },
             { name: 'New T-shirt', amount: 600, category: 'Other', date: addDays(startOfThisMonth, 9), walletId: gcashWalletRef.id, paymentMethod: 'GCash' },
         ];
         expensesData.forEach(exp => {
             const expenseRef = doc(collection(firestore, 'users', userId, 'expenses'));
-            batch.set(expenseRef, { ...exp, userId, paymentMethod: exp.paymentMethod || CASH_ON_HAND_WALLET.name });
+            newBatch.set(expenseRef, { ...exp, userId, paymentMethod: exp.paymentMethod || CASH_ON_HAND_WALLET.name });
         });
 
         // Sample IOUs
         const iousData = [
             { name: 'Borrowed for lunch', amount: 500, type: 'Borrow', dueDate: addDays(now, 15), paid: false },
-            { name: 'Lent to a colleague', amount: 1000, type: 'Lent', dueDate: addDays(now, 20), paid: false },
+            { name: 'Lent to a colleague', amount: 1000, type: 'Lent', dueDate: addDays(now, 20), paid: true },
             { name: 'Lent to sister', amount: 300, type: 'Lent', dueDate: addDays(now, 25), paid: false },
         ];
         iousData.forEach(iou => {
             const iouRef = doc(collection(firestore, 'users', userId, 'ious'));
-            batch.set(iouRef, { ...iou, userId });
+            newBatch.set(iouRef, { ...iou, userId });
         });
 
         // Sample Wishlist Items
         const wishlistData = [
             { name: 'New Headphones', targetAmount: 8000, savedAmount: 1500, purchased: false },
-            { name: 'Weekend Trip', targetAmount: 10000, savedAmount: 2500, purchased: false },
+            { name: 'Weekend Trip', targetAmount: 10000, savedAmount: 10000, purchased: false },
         ];
         wishlistData.forEach(wish => {
             const wishRef = doc(collection(firestore, 'users', userId, 'wishlist'));
-            batch.set(wishRef, { ...wish, userId });
+            newBatch.set(wishRef, { ...wish, userId });
         });
         
         // Sample Budgets for all categories
-        const budgetsData = [
-            { category: 'Groceries', amount: 10000 },
-            { category: 'Transport', amount: 2000 },
-            { category: 'Entertainment', amount: 4000 },
-            { category: 'Housing', amount: 15000 },
-            { category: 'Utilities', amount: 5000 },
-            { category: 'Bills', amount: 3000 },
-            { category: 'Other', amount: 2000 },
-        ];
-        budgetsData.forEach(budget => {
-            const budgetRef = doc(firestore, 'users', userId, 'budgets', budget.category);
-            batch.set(budgetRef, { ...budget, userId });
+        const budgetsData = CATEGORIES.map(category => {
+            let amount = 2000;
+            if (category === 'Groceries') amount = 10000;
+            if (category === 'Housing') amount = 15000;
+            if (category === 'Utilities') amount = 5000;
+            if (category === 'Entertainment') amount = 4000;
+            return { category, amount };
         });
 
-        await batch.commit();
+        budgetsData.forEach(budget => {
+            const budgetRef = doc(firestore, 'users', userId, 'budgets', budget.category);
+            newBatch.set(budgetRef, { ...budget, userId });
+        });
+
+        await newBatch.commit();
         toast({ title: 'Seeding Complete!', description: 'Your account is now populated with sample data.' });
 
     } catch (error: any) {
+        console.error("Seeding error: ", error);
         toast({ variant: 'destructive', title: 'Seeding Failed', description: error.message });
     }
+  };
+
+  const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toDate() : date);
+
+  const handleGenerateReport = (options: { startDate: Date, endDate: Date, includeIncome: boolean, includeIous: boolean, includeWishlist: boolean, printAll: boolean }) => {
+    const { startDate, endDate, includeIncome, includeIous, includeWishlist, printAll } = options;
+
+    const dateInterval = { start: startDate, end: endDate };
+
+    const filteredExpenses = printAll ? expenses || [] : expenses?.filter(e => isWithinInterval(toDate(e.date), dateInterval)) || [];
+    const filteredIncome = (includeIncome && printAll) ? income || [] : includeIncome ? income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) : [];
+    const filteredIous = (includeIous && printAll) ? ious || [] : includeIous ? ious?.filter(i => isWithinInterval(toDate(i.dueDate), dateInterval)) : [];
+    const filteredWishlist = (includeWishlist && printAll) ? wishlistItems || [] : includeWishlist ? wishlistItems : [];
+    
+    const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalIncome = filteredIncome?.reduce((sum, i) => sum + i.amount, 0) || 0;
+
+    setReportData({
+        expenses: filteredExpenses,
+        income: filteredIncome || [],
+        ious: filteredIous || [],
+        wishlist: filteredWishlist || [],
+        summary: {
+            totalIncome: totalIncome,
+            totalExpenses: totalExpenses,
+            netBalance: totalIncome - totalExpenses
+        },
+        dateRange: {
+            startDate,
+            endDate
+        },
+        printAll,
+    });
+
+    setTimeout(() => window.print(), 500);
   };
   
 
@@ -302,6 +371,9 @@ export default function ProfilePage() {
 
   return (
     <>
+      <div className="hidden print:block">
+        {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} wallets={allWallets} />}
+      </div>
       <div className="flex min-h-screen w-full flex-col bg-background p-4 md:p-8 no-print">
         <div className='mb-4'>
             <Button asChild variant="outline">
@@ -395,7 +467,7 @@ export default function ProfilePage() {
                     <CardDescription>Export, import, or reset your financial data.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
-                     <Button variant="outline" onClick={handleExport}>Export My Data</Button>
+                     <Button variant="outline" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export My Data</Button>
                      <Button variant="outline" onClick={() => importFileInputRef.current?.click()}>Import Data</Button>
                      <Button variant="secondary" onClick={handleSeedData}>Seed Dummy Data</Button>
                      <Button variant="destructive" onClick={() => setResetConfirmOpen(true)}>Reset Data</Button>
@@ -407,7 +479,10 @@ export default function ProfilePage() {
                         onChange={handleImportFileSelect}
                     />
                 </CardContent>
-                 <CardFooter>
+                <CardFooter className='flex-col gap-y-4 items-start'>
+                     <Button variant="outline" onClick={() => setIsReportDialogOpen(true)}>
+                        Download Report
+                    </Button>
                     <p className='text-xs text-muted-foreground'>
                         <strong>Warning:</strong> Importing or resetting data will permanently overwrite or delete all current financial data in your account. Your user profile will not be affected.
                     </p>
@@ -416,6 +491,12 @@ export default function ProfilePage() {
 
         </div>
       </div>
+
+      <TransactionReportDialog
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+        onGenerate={handleGenerateReport}
+      />
 
       <ConfirmationDialog
         open={isImportConfirmOpen}

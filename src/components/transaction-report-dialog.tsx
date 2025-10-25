@@ -32,21 +32,21 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 const reportSchema = z.object({
-  dateRange: z.custom<DateRange>(
-    (val) => {
-      const range = val as DateRange;
-      return range?.from && range?.to;
-    },
-    { message: "Date range is required." }
-  ),
+  dateRange: z.custom<DateRange>().optional(),
   includeIncome: z.boolean().default(true),
   includeIous: z.boolean().default(true),
+  includeWishlist: z.boolean().default(false),
+  printAll: z.boolean().default(false),
+}).refine(data => data.printAll || (data.dateRange?.from && data.dateRange?.to), {
+  message: "Date range is required unless printing all records.",
+  path: ["dateRange"],
 });
+
 
 interface TransactionReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onGenerate: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeIous: boolean }) => void;
+  onGenerate: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeIous: boolean; includeWishlist: boolean, printAll: boolean; }) => void;
 }
 
 export function TransactionReportDialog({ open, onOpenChange, onGenerate }: TransactionReportDialogProps) {
@@ -61,28 +61,35 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
       },
       includeIncome: true,
       includeIous: true,
+      includeWishlist: false,
+      printAll: false,
     },
   });
 
+  const printAll = form.watch('printAll');
+
   function onSubmit(values: z.infer<typeof reportSchema>) {
-    if (!values.dateRange.from || !values.dateRange.to) {
-        toast({
-            variant: "destructive",
-            title: "Invalid Date Range",
-            description: "Please select a start and end date."
-        });
-        return;
+    const { dateRange, includeIncome, includeIous, includeWishlist, printAll } = values;
+
+    if (!printAll && (!dateRange?.from || !dateRange?.to)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Date Range",
+        description: "Please select a start and end date, or select 'Print All Records'."
+      });
+      return;
     }
     
     onOpenChange(false);
 
-    // Give the dialog time to close before printing
     setTimeout(() => {
         onGenerate({
-            startDate: values.dateRange.from!,
-            endDate: values.dateRange.to!,
-            includeIncome: values.includeIncome,
-            includeIous: values.includeIous
+            startDate: dateRange?.from || new Date(),
+            endDate: dateRange?.to || new Date(),
+            includeIncome,
+            includeIous,
+            includeWishlist,
+            printAll,
         });
     }, 200);
   }
@@ -100,6 +107,21 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
+              name="printAll"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Print All Records</FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="dateRange"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -109,9 +131,11 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
                       <Button
                         id="date"
                         variant={"outline"}
+                        disabled={printAll}
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
+                          !field.value && "text-muted-foreground",
+                          printAll && "opacity-50"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -148,42 +172,46 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
             <div className="space-y-4">
                 <h4 className="text-sm font-medium">Include in Report</h4>
                 <FormField
-                control={form.control}
-                name="includeIncome"
-                render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                            <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                            <FormLabel>
-                            Income Records
-                            </FormLabel>
-                        </div>
-                    </FormItem>
-                )}
+                  control={form.control}
+                  name="includeIncome"
+                  render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                              <FormLabel>Income Records</FormLabel>
+                          </div>
+                      </FormItem>
+                  )}
                 />
                  <FormField
-                control={form.control}
-                name="includeIous"
-                render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                            <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                            <FormLabel>
-                            Debts & Loans (IOUs)
-                            </FormLabel>
-                        </div>
-                    </FormItem>
-                )}
+                  control={form.control}
+                  name="includeIous"
+                  render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                              <FormLabel>Debts & Loans (IOUs)</FormLabel>
+                          </div>
+                      </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="includeWishlist"
+                  render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                              <FormLabel>Wishlist Items</FormLabel>
+                          </div>
+                      </FormItem>
+                  )}
                 />
             </div>
 
