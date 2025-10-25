@@ -96,7 +96,7 @@
   }
 
   .print-table-section {
-    page-break-inside: auto;
+    page-break-inside: avoid;
   }
 
   .print-table tr {

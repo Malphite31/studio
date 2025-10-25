@@ -30,7 +30,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
   const { expenses, income, ious, summary, dateRange } = reportData;
 
   const IouTable = ({ title, items }: { title: string; items: ReportData['ious'] }) => (
-    <>
+    <div className="print-table-section">
       <h2 className="text-xl font-semibold mt-6 mb-2">{title}</h2>
       <Table className="print-table">
         <TableHeader className="print-header">
@@ -61,7 +61,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
           )}
         </TableBody>
       </Table>
-    </>
+    </div>
   );
 
   return (
@@ -97,7 +97,6 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
                     <p className="text-2xl font-bold text-red-600">{formatCurrency(summary.totalExpenses)}</p>
                 </div>
                 <div className="text-center">
-                    <p className="text-gray-600 text-sm">Net Balance</p>
                     <p className={`text-2xl font-bold ${summary.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(summary.netBalance)}</p>
                 </div>
             </div>
