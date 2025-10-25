@@ -79,7 +79,7 @@
   
   @page {
     size: auto;
-    margin: 0.75in;
+    margin: 0.5in;
   }
 
   body {
@@ -88,7 +88,7 @@
   }
 
   .print-container {
-    font-size: 10pt;
+    font-size: 9pt;
   }
   
   .print-header {

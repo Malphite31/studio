@@ -29,43 +29,53 @@ const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toD
 export default function TransactionReport({ reportData, user, wallets }: TransactionReportProps) {
   const { expenses, income, ious, summary, dateRange } = reportData;
 
-  const IouTable = ({ title, items }: { title: string; items: ReportData['ious'] }) => (
-    <div className="print-table-section">
-      <h2 className="text-xl font-semibold mt-6 mb-2">{title}</h2>
-      <Table className="print-table">
-        <TableHeader className="print-header">
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.length > 0 ? (
-            items.map((iou) => (
-              <TableRow key={iou.id}>
-                <TableCell>{isValid(toDate(iou.dueDate)) ? format(toDate(iou.dueDate), 'MMM d, yyyy') : 'n/a'}</TableCell>
-                <TableCell className="font-medium">{iou.name}</TableCell>
-                <TableCell>{iou.paid ? 'Paid' : 'Unpaid'}</TableCell>
-                <TableCell className={`text-right font-medium ${iou.type === 'Borrow' ? 'text-red-600' : 'text-green-600'}`}>
-                  {iou.type === 'Borrow' ? '-' : '+'}
-                  {formatCurrency(iou.amount)}
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
+  const IouTable = ({ title, items }: { title: string; items: ReportData['ious'] }) => {
+    const total = items.reduce((sum, item) => sum + item.amount, 0);
+    return (
+      <div className="print-table-section">
+        <h2 className="text-xl font-semibold mt-6 mb-2">{title}</h2>
+        <Table className="print-table">
+          <TableHeader className="print-header">
             <TableRow>
-              <TableCell colSpan={4} className="text-center h-24">No data for this period.</TableCell>
+              <TableHead>Date</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  );
+          </TableHeader>
+          <TableBody>
+            {items.length > 0 ? (
+              items.map((iou) => (
+                <TableRow key={iou.id}>
+                  <TableCell>{isValid(toDate(iou.dueDate)) ? format(toDate(iou.dueDate), 'MMM d, yyyy') : 'n/a'}</TableCell>
+                  <TableCell className="font-medium">{iou.name}</TableCell>
+                  <TableCell>{iou.paid ? 'Paid' : 'Unpaid'}</TableCell>
+                  <TableCell className={`text-right font-medium ${iou.type === 'Borrow' ? 'text-red-600' : 'text-green-600'}`}>
+                    {iou.type === 'Borrow' ? '-' : '+'}
+                    {formatCurrency(iou.amount)}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center h-24">No data for this period.</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+           <TableFooter>
+                <TableRow>
+                    <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
+                    <TableCell className="text-right font-bold">{formatCurrency(total)}</TableCell>
+                </TableRow>
+            </TableFooter>
+        </Table>
+      </div>
+    );
+  }
+
 
   return (
-    <div className="bg-white text-black p-8 font-sans print-container">
+    <div className="bg-white text-black p-4 font-sans print-container">
       <header className="mb-8">
         <div className="flex items-center justify-between pb-4 border-b">
           <div className="flex items-center gap-2">
@@ -87,24 +97,25 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
         {/* Summary Section */}
         <section className="mb-8 p-4 bg-gray-100 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">Summary</h2>
-            <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
+            <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
                     <p className="text-gray-600 text-sm">Total Income</p>
-                    <p className="text-2xl font-bold text-green-600">{formatCurrency(summary.totalIncome)}</p>
+                    <p className="text-lg font-bold text-green-600">{formatCurrency(summary.totalIncome)}</p>
                 </div>
-                <div className="text-center">
+                <div>
                     <p className="text-gray-600 text-sm">Total Expenses</p>
-                    <p className="text-2xl font-bold text-red-600">{formatCurrency(summary.totalExpenses)}</p>
+                    <p className="text-lg font-bold text-red-600">{formatCurrency(summary.totalExpenses)}</p>
                 </div>
-                <div className="text-center">
-                    <p className={`text-2xl font-bold ${summary.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(summary.netBalance)}</p>
+                <div>
+                    <p className="text-gray-600 text-sm">Net Balance</p>
+                    <p className={`text-lg font-bold ${summary.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(summary.netBalance)}</p>
                 </div>
             </div>
         </section>
 
 
         {/* Expenses Section */}
-        <section className="mb-8 print-table-section">
+        <div className="print-table-section">
           <h2 className="text-xl font-semibold mb-2">Expenses</h2>
           <Table className="print-table">
             <TableHeader className="print-header">
@@ -133,14 +144,18 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
                 </TableRow>
               )}
             </TableBody>
+            <TableFooter>
+                <TableRow>
+                    <TableCell colSpan={4} className="text-right font-bold">Total Expenses</TableCell>
+                    <TableCell className="text-right font-bold text-red-600">{formatCurrency(summary.totalExpenses)}</TableCell>
+                </TableRow>
+            </TableFooter>
           </Table>
-        </section>
+        </div>
         
-        <Separator className="my-6"/>
-
         {/* Income Section */}
         {income.length > 0 &&
-            <section className="mb-8 print-table-section">
+            <div className="print-table-section page-break-before">
             <h2 className="text-xl font-semibold mb-2">Income</h2>
             <Table className="print-table">
                 <TableHeader className="print-header">
@@ -161,22 +176,25 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
                     </TableRow>
                 ))}
                 </TableBody>
+                 <TableFooter>
+                    <TableRow>
+                        <TableCell colSpan={3} className="text-right font-bold">Total Income</TableCell>
+                        <TableCell className="text-right font-bold text-green-600">{formatCurrency(summary.totalIncome)}</TableCell>
+                    </TableRow>
+                </TableFooter>
             </Table>
-            </section>
+            </div>
         }
 
         {/* IOU Section */}
         {ious.length > 0 &&
-            <section className="print-table-section">
+            <div className="page-break-before">
                 <IouTable title="Debts (Money You Borrowed)" items={ious.filter(i => i.type === 'Borrow')} />
                 <IouTable title="Loans (Money You Lent)" items={ious.filter(i => i.type === 'Lent')} />
-            </section>
+            </div>
         }
       </main>
       
-      <footer className="mt-12 text-center text-xs text-gray-500">
-        <p>Generated by PennyWise on {format(new Date(), 'MMMM d, yyyy')}</p>
-      </footer>
     </div>
   );
 }
