@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleUser, Coins, Menu, Settings, LogOut, User as UserIcon, Wallet } from 'lucide-react';
+import { CircleUser, Coins, Menu, Settings, LogOut, User as UserIcon, Wallet, Printer } from 'lucide-react';
 import Link from 'next/link';
 import {
   Sheet,
@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ExpenseForm } from './expense-form';
 import { BudgetForm } from './budget-form';
 import { ThemeSwitcher } from './theme-switcher';
@@ -42,6 +42,7 @@ interface DashboardHeaderProps {
   budgetGoals: BudgetGoal[];
   updateBudgets: (updatedGoals: Record<Category, number>) => void;
   wallets: EWallet[];
+  onPrintReport: () => void;
 }
 
 const formatCurrency = (amount: number) => 
@@ -55,7 +56,8 @@ export default function DashboardHeader({
   addIncome,
   budgetGoals,
   updateBudgets,
-  wallets
+  wallets,
+  onPrintReport
 }: DashboardHeaderProps) {
   const { user } = useUser();
   const auth = useAuth();
@@ -69,7 +71,7 @@ export default function DashboardHeader({
   };
 
   return (
-    <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
+    <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 no-print">
         <div className="flex items-center gap-4 font-semibold">
           <Coins className="h-6 w-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full p-0.5" />
           <span className='bg-gradient-to-r from-yellow-300 via-orange-400 to-purple-500 text-transparent bg-clip-text font-bold text-lg'>PennyWise</span>
@@ -156,6 +158,10 @@ export default function DashboardHeader({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/profile"><UserIcon className="mr-2 h-4 w-4" />Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onPrintReport}>
+                      <Printer className="mr-2 h-4 w-4" />
+                      Print Report
                     </DropdownMenuItem>
                     <DropdownMenuItem>Support</DropdownMenuItem>
                     <DropdownMenuSeparator />

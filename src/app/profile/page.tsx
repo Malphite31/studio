@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -216,7 +216,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <div className="flex min-h-screen w-full flex-col bg-background p-4 md:p-8">
+      <div className="flex min-h-screen w-full flex-col bg-background p-4 md:p-8 no-print">
         <div className='mb-4'>
             <Button asChild variant="outline">
                 <Link href="/"><ArrowLeft className='mr-2' /> Back to Dashboard</Link>

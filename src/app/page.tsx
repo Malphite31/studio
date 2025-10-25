@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import type { Expense as ExpenseType, BudgetGoal, Category, WishlistItem as WishlistItemType, Iou as IouType, Income as IncomeType, EWallet, UserProfile } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard-header';
 import RecentExpenses from '@/components/recent-expenses';
@@ -21,6 +21,7 @@ import EWallets from '@/components/e-wallets';
 import { useToast } from '@/hooks/use-toast';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import TransactionReport from '@/components/transaction-report';
 
 
 export default function DashboardPage() {
@@ -28,6 +29,8 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const [showWelcome, setShowWelcome] = useState(false);
   const { toast } = useToast();
+  const printRef = useRef<HTMLDivElement>(null);
+
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
@@ -45,7 +48,7 @@ export default function DashboardPage() {
   }, [user]);
 
   const expensesQuery = useMemoFirebase(() => 
-    user ? collection(firestore, 'users', user.uid, 'expenses') : null, 
+    user ? query(collection(firestore, 'users', user.uid, 'expenses')) : null, 
     [user, firestore]
   );
   const { data: expenses, isLoading: expensesLoading } = useCollection<ExpenseType>(expensesQuery);
@@ -445,6 +448,10 @@ export default function DashboardPage() {
         }
     };
 
+    const handlePrintReport = () => {
+      window.print();
+    };
+
 
   if (isUserLoading || walletsLoading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
@@ -458,7 +465,10 @@ export default function DashboardPage() {
   return (
     <>
       <WelcomeDialog open={showWelcome} onOpenChange={setShowWelcome} userProfile={userProfile} />
-      <div className="flex min-h-screen w-full flex-col bg-background">
+      <div className="printable-area" ref={printRef}>
+          {expenses && userProfile && <TransactionReport expenses={expenses} user={userProfile} />}
+      </div>
+      <div className="flex min-h-screen w-full flex-col bg-background no-print">
         <DashboardHeader
           balance={balance}
           addExpense={addExpense}
@@ -467,6 +477,7 @@ export default function DashboardPage() {
           budgetGoals={budgetGoals || []}
           updateBudgets={updateBudgets}
           wallets={allWallets}
+          onPrintReport={handlePrintReport}
         />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
