@@ -9,7 +9,7 @@ import {
   TableRow,
   TableFooter
 } from '@/components/ui/table';
-import type { UserProfile, ReportData } from '@/lib/types';
+import type { UserProfile, ReportData, EWallet } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { Coins } from 'lucide-react';
@@ -18,6 +18,7 @@ import { Separator } from './ui/separator';
 interface TransactionReportProps {
   reportData: ReportData;
   user: UserProfile | null;
+  wallets: EWallet[];
 }
 
 const formatCurrency = (amount: number) =>
@@ -25,7 +26,7 @@ const formatCurrency = (amount: number) =>
 
 const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toDate() : date);
 
-export default function TransactionReport({ reportData, user }: TransactionReportProps) {
+export default function TransactionReport({ reportData, user, wallets }: TransactionReportProps) {
   const { expenses, income, ious, summary, dateRange } = reportData;
 
   const IouTable = ({ title, items }: { title: string; items: ReportData['ious'] }) => (

@@ -434,7 +434,7 @@ export default function DashboardPage() {
         try {
             await runTransaction(firestore, async (transaction) => {
                 if (income.walletId && income.walletId !== CASH_ON_HAND_WALLET.id) {
-                    const walletRef = doc(firestore, 'users', user.uid, 'wallets', income.walletId);
+                    const walletRef = doc(firestore, 'users', user.uid, 'income', income.walletId);
                     const walletDoc = await transaction.get(walletRef);
                     if (walletDoc.exists()) {
                         const newBalance = walletDoc.data().balance - income.amount;
@@ -495,7 +495,7 @@ export default function DashboardPage() {
     <>
       <WelcomeDialog open={showWelcome} onOpenChange={setShowWelcome} userProfile={userProfile} />
       <div className="hidden print:block">
-        {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} />}
+        {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} wallets={allWallets} />}
       </div>
       <div className="flex min-h-screen w-full flex-col bg-background no-print">
         <DashboardHeader
