@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { addDays, startOfMonth } from 'date-fns';
-import { CATEGORIES } from '@/lib/data';
+import { CATEGORIES, CASH_ON_HAND_WALLET } from '@/lib/data';
 
 
 const profileSchema = z.object({
@@ -223,41 +223,66 @@ export default function ProfilePage() {
         const now = new Date();
         const startOfThisMonth = startOfMonth(now);
 
+        // Sample E-Wallet
+        const gcashWalletRef = doc(collection(firestore, 'users', userId, 'wallets'));
+        batch.set(gcashWalletRef, { name: 'GCash', balance: 1500, userId });
+
         // Sample Income
-        const incomeRef = doc(collection(firestore, 'users', userId, 'income'));
-        batch.set(incomeRef, { userId, name: 'Monthly Salary', amount: 50000, date: addDays(startOfThisMonth, 1), walletId: 'cash' });
+        const incomeData = [
+            { name: 'Monthly Salary', amount: 50000, date: addDays(startOfThisMonth, 1), walletId: 'cash' },
+            { name: 'Freelance Project', amount: 12000, date: addDays(startOfThisMonth, 10), walletId: gcashWalletRef.id }
+        ];
+        incomeData.forEach(inc => {
+            const incomeRef = doc(collection(firestore, 'users', userId, 'income'));
+            batch.set(incomeRef, { ...inc, userId });
+        });
         
         // Sample Expenses
         const expensesData = [
-            { name: 'Weekly Groceries', amount: 3500, category: 'Groceries', date: addDays(startOfThisMonth, 2) },
-            { name: 'Train Ticket', amount: 150, category: 'Transport', date: addDays(startOfThisMonth, 3) },
-            { name: 'Movie Night', amount: 1200, category: 'Entertainment', date: addDays(startOfThisMonth, 4) },
-            { name: 'Electricity Bill', amount: 2500, category: 'Bills', date: addDays(startOfThisMonth, 5) },
+            { name: 'Weekly Groceries', amount: 3500, category: 'Groceries', date: addDays(startOfThisMonth, 2), walletId: 'cash' },
+            { name: 'Train Ticket', amount: 150, category: 'Transport', date: addDays(startOfThisMonth, 3), walletId: 'cash' },
+            { name: 'Movie Night', amount: 1200, category: 'Entertainment', date: addDays(startOfThisMonth, 4), walletId: gcashWalletRef.id, paymentMethod: 'GCash' },
+            { name: 'Electricity Bill', amount: 2500, category: 'Bills', date: addDays(startOfThisMonth, 5), walletId: 'cash' },
+            { name: 'Apartment Rent', amount: 15000, category: 'Housing', date: addDays(startOfThisMonth, 6), walletId: 'cash' },
+            { name: 'Internet Bill', amount: 1800, category: 'Utilities', date: addDays(startOfThisMonth, 7), walletId: gcashWalletRef.id, paymentMethod: 'GCash' },
+            { name: 'Lunch with friends', amount: 800, category: 'Groceries', date: addDays(startOfThisMonth, 8), walletId: 'cash' },
+            { name: 'New T-shirt', amount: 600, category: 'Other', date: addDays(startOfThisMonth, 9), walletId: gcashWalletRef.id, paymentMethod: 'GCash' },
         ];
         expensesData.forEach(exp => {
             const expenseRef = doc(collection(firestore, 'users', userId, 'expenses'));
-            batch.set(expenseRef, { ...exp, userId, walletId: 'cash', paymentMethod: 'Cash on Hand' });
+            batch.set(expenseRef, { ...exp, userId, paymentMethod: exp.paymentMethod || CASH_ON_HAND_WALLET.name });
         });
 
         // Sample IOUs
         const iousData = [
             { name: 'Borrowed for lunch', amount: 500, type: 'Borrow', dueDate: addDays(now, 15), paid: false },
             { name: 'Lent to a colleague', amount: 1000, type: 'Lent', dueDate: addDays(now, 20), paid: false },
+            { name: 'Lent to sister', amount: 300, type: 'Lent', dueDate: addDays(now, 25), paid: false },
         ];
         iousData.forEach(iou => {
             const iouRef = doc(collection(firestore, 'users', userId, 'ious'));
             batch.set(iouRef, { ...iou, userId });
         });
 
-        // Sample Wishlist Item
-        const wishRef = doc(collection(firestore, 'users', userId, 'wishlist'));
-        batch.set(wishRef, { name: 'New Headphones', targetAmount: 8000, savedAmount: 1500, userId, purchased: false });
-
-        // Sample Budgets
+        // Sample Wishlist Items
+        const wishlistData = [
+            { name: 'New Headphones', targetAmount: 8000, savedAmount: 1500, purchased: false },
+            { name: 'Weekend Trip', targetAmount: 10000, savedAmount: 2500, purchased: false },
+        ];
+        wishlistData.forEach(wish => {
+            const wishRef = doc(collection(firestore, 'users', userId, 'wishlist'));
+            batch.set(wishRef, { ...wish, userId });
+        });
+        
+        // Sample Budgets for all categories
         const budgetsData = [
-            { category: 'Groceries', amount: 8000 },
-            { category: 'Entertainment', amount: 4000 },
+            { category: 'Groceries', amount: 10000 },
             { category: 'Transport', amount: 2000 },
+            { category: 'Entertainment', amount: 4000 },
+            { category: 'Housing', amount: 15000 },
+            { category: 'Utilities', amount: 5000 },
+            { category: 'Bills', amount: 3000 },
+            { category: 'Other', amount: 2000 },
         ];
         budgetsData.forEach(budget => {
             const budgetRef = doc(firestore, 'users', userId, 'budgets', budget.category);
