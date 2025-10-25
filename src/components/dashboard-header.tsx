@@ -1,7 +1,8 @@
 'use client';
 
-import { CircleUser, Coins, Menu, Settings, LogOut, User as UserIcon, Wallet, Printer } from 'lucide-react';
+import { CircleUser, Coins, Menu, LogOut, User as UserIcon, Wallet } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -20,7 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ExpenseForm } from './expense-form';
 import { BudgetForm } from './budget-form';
 import { ThemeSwitcher } from './theme-switcher';
@@ -31,7 +31,7 @@ import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { cn } from '@/lib/utils';
-import { Separator } from './ui/separator';
+import { TransactionReportDialog } from './transaction-report-dialog';
 
 
 interface DashboardHeaderProps {
@@ -42,7 +42,7 @@ interface DashboardHeaderProps {
   budgetGoals: BudgetGoal[];
   updateBudgets: (updatedGoals: Record<Category, number>) => void;
   wallets: EWallet[];
-  onPrintReport: () => void;
+  onGenerateReport: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeIous: boolean }) => void;
 }
 
 const formatCurrency = (amount: number) => 
@@ -57,11 +57,12 @@ export default function DashboardHeader({
   budgetGoals,
   updateBudgets,
   wallets,
-  onPrintReport
+  onGenerateReport
 }: DashboardHeaderProps) {
   const { user } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
@@ -71,6 +72,7 @@ export default function DashboardHeader({
   };
 
   return (
+    <>
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 no-print">
         <div className="flex items-center gap-4 font-semibold">
           <Coins className="h-6 w-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full p-0.5" />
@@ -159,8 +161,7 @@ export default function DashboardHeader({
                     <DropdownMenuItem asChild>
                       <Link href="/profile"><UserIcon className="mr-2 h-4 w-4" />Profile</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onPrintReport}>
-                      <Printer className="mr-2 h-4 w-4" />
+                    <DropdownMenuItem onSelect={() => setIsReportDialogOpen(true)}>
                       Print Report
                     </DropdownMenuItem>
                     <DropdownMenuItem>Support</DropdownMenuItem>
@@ -173,5 +174,11 @@ export default function DashboardHeader({
             </DropdownMenu>
         </div>
     </header>
+    <TransactionReportDialog
+        open={isReportDialogOpen}
+        onOpenChange={setIsReportDialogOpen}
+        onGenerate={onGenerateReport}
+      />
+    </>
   );
 }

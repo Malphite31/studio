@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
-import type { Expense as ExpenseType, BudgetGoal, Category, WishlistItem as WishlistItemType, Iou as IouType, Income as IncomeType, EWallet, UserProfile } from '@/lib/types';
+import type { Expense as ExpenseType, BudgetGoal, Category, WishlistItem as WishlistItemType, Iou as IouType, Income as IncomeType, EWallet, UserProfile, ReportData } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard-header';
 import RecentExpenses from '@/components/recent-expenses';
 import SpendingBreakdown from '@/components/spending-breakdown';
@@ -22,15 +22,16 @@ import { useToast } from '@/hooks/use-toast';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import TransactionReport from '@/components/transaction-report';
+import { isWithinInterval } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
 
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [showWelcome, setShowWelcome] = useState(false);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
   const { toast } = useToast();
-  const printRef = useRef<HTMLDivElement>(null);
-
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
@@ -157,7 +158,7 @@ export default function DashboardPage() {
       paid: false,
       userId: user.uid,
     };
-    addDocumentNonBlocking(iousQuery, newIou);
+    addDocumentNonBlocking(collection(firestore, 'users', user.uid, 'ious'), newIou);
   };
 
   const addIncome = async (incomeData: Omit<IncomeType, 'id' | 'date' | 'userId'>) => {
@@ -448,8 +449,36 @@ export default function DashboardPage() {
         }
     };
 
-    const handlePrintReport = () => {
-      window.print();
+    const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toDate() : date);
+
+    const handleGenerateReport = (options: { startDate: Date, endDate: Date, includeIncome: boolean, includeIous: boolean }) => {
+        const { startDate, endDate, includeIncome, includeIous } = options;
+
+        const dateInterval = { start: startDate, end: endDate };
+
+        const filteredExpenses = expenses?.filter(e => isWithinInterval(toDate(e.date), dateInterval)) || [];
+        const filteredIncome = includeIncome ? income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) : [];
+        const filteredIous = includeIous ? ious?.filter(i => isWithinInterval(toDate(i.dueDate), dateInterval)) : [];
+        
+        const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+        const totalIncome = filteredIncome?.reduce((sum, i) => sum + i.amount, 0) || 0;
+
+        setReportData({
+            expenses: filteredExpenses,
+            income: filteredIncome || [],
+            ious: filteredIous || [],
+            summary: {
+                totalIncome: totalIncome,
+                totalExpenses: totalExpenses,
+                netBalance: totalIncome - totalExpenses
+            },
+            dateRange: {
+                startDate,
+                endDate
+            }
+        });
+
+        setTimeout(() => window.print(), 500); // Allow state to update
     };
 
 
@@ -466,7 +495,7 @@ export default function DashboardPage() {
     <>
       <WelcomeDialog open={showWelcome} onOpenChange={setShowWelcome} userProfile={userProfile} />
       <div className="hidden print:block">
-        {expenses && userProfile && <TransactionReport expenses={expenses} user={userProfile} />}
+        {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} />}
       </div>
       <div className="flex min-h-screen w-full flex-col bg-background no-print">
         <DashboardHeader
@@ -477,7 +506,7 @@ export default function DashboardPage() {
           budgetGoals={budgetGoals || []}
           updateBudgets={updateBudgets}
           wallets={allWallets}
-          onPrintReport={handlePrintReport}
+          onGenerateReport={handleGenerateReport}
         />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
@@ -543,5 +572,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    

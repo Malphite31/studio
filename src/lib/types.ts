@@ -77,4 +77,17 @@ export interface ExportData {
   wallets: EWallet[];
 }
 
-    
+export interface ReportData {
+  expenses: Expense[];
+  income: Income[];
+  ious: Iou[];
+  summary: {
+    totalIncome: number;
+    totalExpenses: number;
+    netBalance: number;
+  };
+  dateRange: {
+    startDate: Date;
+    endDate: Date;
+  };
+}
