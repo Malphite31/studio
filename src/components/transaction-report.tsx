@@ -37,10 +37,10 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
         <Table className="print-table">
           <TableHeader className="print-header">
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className='font-bold text-black'>Date</TableHead>
+              <TableHead className='font-bold text-black'>Description</TableHead>
+              <TableHead className='font-bold text-black'>Status</TableHead>
+              <TableHead className="text-right font-bold text-black">Amount</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -50,7 +50,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
                   <TableCell>{isValid(toDate(iou.dueDate)) ? format(toDate(iou.dueDate), 'MMM d, yyyy') : 'n/a'}</TableCell>
                   <TableCell className="font-medium">{iou.name}</TableCell>
                   <TableCell>{iou.paid ? 'Paid' : 'Unpaid'}</TableCell>
-                  <TableCell className={`text-right font-medium ${iou.type === 'Borrow' ? 'text-red-600' : 'text-green-600'}`}>
+                  <TableCell className={`text-right font-medium`}>
                     {iou.type === 'Borrow' ? '-' : '+'}
                     {formatCurrency(iou.amount)}
                   </TableCell>
@@ -95,20 +95,20 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
       <main>
         {/* Summary Section */}
-        <section className="mb-8 p-4 bg-gray-100 rounded-lg">
+        <section className="mb-8 p-4 rounded-lg border">
             <h2 className="text-xl font-semibold mb-4">Summary</h2>
             <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                     <p className="text-gray-600 text-sm">Total Income</p>
-                    <p className="text-lg font-bold text-green-600">{formatCurrency(summary.totalIncome)}</p>
+                    <p className="text-lg font-bold">{formatCurrency(summary.totalIncome)}</p>
                 </div>
                 <div>
                     <p className="text-gray-600 text-sm">Total Expenses</p>
-                    <p className="text-lg font-bold text-red-600">{formatCurrency(summary.totalExpenses)}</p>
+                    <p className="text-lg font-bold">{formatCurrency(summary.totalExpenses)}</p>
                 </div>
                 <div>
                     <p className="text-gray-600 text-sm">Net Balance</p>
-                    <p className={`text-lg font-bold ${summary.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(summary.netBalance)}</p>
+                    <p className={`text-lg font-bold`}>{formatCurrency(summary.netBalance)}</p>
                 </div>
             </div>
         </section>
@@ -120,11 +120,11 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
           <Table className="print-table">
             <TableHeader className="print-header">
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className='font-bold text-black'>Date</TableHead>
+                <TableHead className='font-bold text-black'>Description</TableHead>
+                <TableHead className='font-bold text-black'>Category</TableHead>
+                <TableHead className='font-bold text-black'>Payment Method</TableHead>
+                <TableHead className="text-right font-bold text-black">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -135,7 +135,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
                     <TableCell className="font-medium">{expense.name}</TableCell>
                     <TableCell>{expense.category}</TableCell>
                     <TableCell>{expense.paymentMethod || 'N/A'}</TableCell>
-                    <TableCell className="text-right font-medium text-red-600">-{formatCurrency(expense.amount)}</TableCell>
+                    <TableCell className="text-right font-medium">-{formatCurrency(expense.amount)}</TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -147,7 +147,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
             <TableFooter>
                 <TableRow>
                     <TableCell colSpan={4} className="text-right font-bold">Total Expenses</TableCell>
-                    <TableCell className="text-right font-bold text-red-600">{formatCurrency(summary.totalExpenses)}</TableCell>
+                    <TableCell className="text-right font-bold">{formatCurrency(summary.totalExpenses)}</TableCell>
                 </TableRow>
             </TableFooter>
           </Table>
@@ -160,10 +160,10 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
             <Table className="print-table">
                 <TableHeader className="print-header">
                 <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Deposited To</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className='font-bold text-black'>Date</TableHead>
+                    <TableHead className='font-bold text-black'>Source</TableHead>
+                    <TableHead className='font-bold text-black'>Deposited To</TableHead>
+                    <TableHead className="text-right font-bold text-black">Amount</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -172,14 +172,14 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
                     <TableCell>{isValid(toDate(item.date)) ? format(toDate(item.date), 'MMM d, yyyy') : 'n/a'}</TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{wallets.find(w => w.id === item.walletId)?.name || 'N/A'}</TableCell>
-                    <TableCell className="text-right font-medium text-green-600">+{formatCurrency(item.amount)}</TableCell>
+                    <TableCell className="text-right font-medium">+{formatCurrency(item.amount)}</TableCell>
                     </TableRow>
                 ))}
                 </TableBody>
                  <TableFooter>
                     <TableRow>
                         <TableCell colSpan={3} className="text-right font-bold">Total Income</TableCell>
-                        <TableCell className="text-right font-bold text-green-600">{formatCurrency(summary.totalIncome)}</TableCell>
+                        <TableCell className="text-right font-bold">{formatCurrency(summary.totalIncome)}</TableCell>
                     </TableRow>
                 </TableFooter>
             </Table>
