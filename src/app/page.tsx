@@ -429,12 +429,12 @@ export default function DashboardPage() {
     const deleteIncome = async (income: IncomeType) => {
         if (!user) return;
     
-        const incomeRef = doc(firestore, 'users', user.uid, 'income', income.id);
+        const incomeRef = doc(collection(firestore, 'users', user.uid, 'income'), income.id);
     
         try {
             await runTransaction(firestore, async (transaction) => {
                 if (income.walletId && income.walletId !== CASH_ON_HAND_WALLET.id) {
-                    const walletRef = doc(firestore, 'users', user.uid, 'income', income.walletId);
+                    const walletRef = doc(firestore, 'users', user.uid, 'wallets', income.walletId);
                     const walletDoc = await transaction.get(walletRef);
                     if (walletDoc.exists()) {
                         const newBalance = walletDoc.data().balance - income.amount;
@@ -493,6 +493,13 @@ export default function DashboardPage() {
     return <Login />;
   }
   
+  if (window.matchMedia('print').matches) {
+    return (
+      <>
+        {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} wallets={allWallets} />}
+      </>
+    );
+  }
 
   return (
     <>
@@ -575,3 +582,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
