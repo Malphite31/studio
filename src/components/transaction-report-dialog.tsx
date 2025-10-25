@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format, subDays } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -31,10 +32,13 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 const reportSchema = z.object({
-  dateRange: z.object({
-    from: z.date(),
-    to: z.date(),
-  }),
+  dateRange: z.custom<DateRange>(
+    (val) => {
+      const range = val as DateRange;
+      return range?.from && range?.to;
+    },
+    { message: "Date range is required." }
+  ),
   includeIncome: z.boolean().default(true),
   includeIous: z.boolean().default(true),
 });
@@ -61,6 +65,15 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
   });
 
   function onSubmit(values: z.infer<typeof reportSchema>) {
+    if (!values.dateRange.from || !values.dateRange.to) {
+        toast({
+            variant: "destructive",
+            title: "Invalid Date Range",
+            description: "Please select a start and end date."
+        });
+        return;
+    }
+    
     onGenerate({
         startDate: values.dateRange.from,
         endDate: values.dateRange.to,
