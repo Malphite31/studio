@@ -465,8 +465,8 @@ export default function DashboardPage() {
   return (
     <>
       <WelcomeDialog open={showWelcome} onOpenChange={setShowWelcome} userProfile={userProfile} />
-      <div className="printable-area" ref={printRef}>
-          {expenses && userProfile && <TransactionReport expenses={expenses} user={userProfile} />}
+      <div className="hidden print:block">
+        {expenses && userProfile && <TransactionReport expenses={expenses} user={userProfile} />}
       </div>
       <div className="flex min-h-screen w-full flex-col bg-background no-print">
         <DashboardHeader
@@ -543,3 +543,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
