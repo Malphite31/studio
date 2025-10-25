@@ -183,7 +183,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
         
         {/* IOU Section */}
         {ious.length > 0 &&
-            <div className='page-break-before'>
+            <div className="print-table-section">
                 <IouTable title="Debts (Money You Borrowed)" items={ious.filter(i => i.type === 'Borrow')} />
                 <IouTable title="Loans (Money You Lent)" items={ious.filter(i => i.type === 'Lent')} />
             </div>
@@ -191,7 +191,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
         {/* Wishlist Section */}
         {wishlist.length > 0 &&
-            <div className="print-table-section page-break-before">
+            <div className="print-table-section">
                 <h2 className="text-lg font-semibold mb-2 mt-4">Wishlist Items</h2>
                 <Table className="print-table">
                     <TableHeader className="print-header">
