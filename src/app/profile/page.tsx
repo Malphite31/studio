@@ -22,6 +22,8 @@ import type { UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
+import { addDays, startOfMonth } from 'date-fns';
+import { CATEGORIES } from '@/lib/data';
 
 
 const profileSchema = z.object({
@@ -210,6 +212,65 @@ export default function ProfilePage() {
         toast({ variant: 'destructive', title: 'Reset Failed', description: error.message });
     }
   };
+
+  const handleSeedData = async () => {
+    if (!user) return;
+    toast({ title: 'Seeding Data...', description: 'Adding sample records for this month.' });
+
+    try {
+        const batch = writeBatch(firestore);
+        const userId = user.uid;
+        const now = new Date();
+        const startOfThisMonth = startOfMonth(now);
+
+        // Sample Income
+        const incomeRef = doc(collection(firestore, 'users', userId, 'income'));
+        batch.set(incomeRef, { userId, name: 'Monthly Salary', amount: 50000, date: addDays(startOfThisMonth, 1), walletId: 'cash' });
+        
+        // Sample Expenses
+        const expensesData = [
+            { name: 'Weekly Groceries', amount: 3500, category: 'Groceries', date: addDays(startOfThisMonth, 2) },
+            { name: 'Train Ticket', amount: 150, category: 'Transport', date: addDays(startOfThisMonth, 3) },
+            { name: 'Movie Night', amount: 1200, category: 'Entertainment', date: addDays(startOfThisMonth, 4) },
+            { name: 'Electricity Bill', amount: 2500, category: 'Bills', date: addDays(startOfThisMonth, 5) },
+        ];
+        expensesData.forEach(exp => {
+            const expenseRef = doc(collection(firestore, 'users', userId, 'expenses'));
+            batch.set(expenseRef, { ...exp, userId, walletId: 'cash', paymentMethod: 'Cash on Hand' });
+        });
+
+        // Sample IOUs
+        const iousData = [
+            { name: 'Borrowed for lunch', amount: 500, type: 'Borrow', dueDate: addDays(now, 15), paid: false },
+            { name: 'Lent to a colleague', amount: 1000, type: 'Lent', dueDate: addDays(now, 20), paid: false },
+        ];
+        iousData.forEach(iou => {
+            const iouRef = doc(collection(firestore, 'users', userId, 'ious'));
+            batch.set(iouRef, { ...iou, userId });
+        });
+
+        // Sample Wishlist Item
+        const wishRef = doc(collection(firestore, 'users', userId, 'wishlist'));
+        batch.set(wishRef, { name: 'New Headphones', targetAmount: 8000, savedAmount: 1500, userId, purchased: false });
+
+        // Sample Budgets
+        const budgetsData = [
+            { category: 'Groceries', amount: 8000 },
+            { category: 'Entertainment', amount: 4000 },
+            { category: 'Transport', amount: 2000 },
+        ];
+        budgetsData.forEach(budget => {
+            const budgetRef = doc(firestore, 'users', userId, 'budgets', budget.category);
+            batch.set(budgetRef, { ...budget, userId });
+        });
+
+        await batch.commit();
+        toast({ title: 'Seeding Complete!', description: 'Your account is now populated with sample data.' });
+
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Seeding Failed', description: error.message });
+    }
+  };
   
 
   if (isProfileLoading) return <div>Loading profile...</div>
@@ -308,9 +369,10 @@ export default function ProfilePage() {
                     <CardTitle>Data Management</CardTitle>
                     <CardDescription>Export, import, or reset your financial data.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
                      <Button variant="outline" onClick={handleExport}>Export My Data</Button>
                      <Button variant="outline" onClick={() => importFileInputRef.current?.click()}>Import Data</Button>
+                     <Button variant="secondary" onClick={handleSeedData}>Seed Dummy Data</Button>
                      <Button variant="destructive" onClick={() => setResetConfirmOpen(true)}>Reset Data</Button>
                      <input
                         type="file"

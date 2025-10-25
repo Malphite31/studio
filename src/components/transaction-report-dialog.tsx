@@ -74,17 +74,22 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
         return;
     }
     
-    onGenerate({
-        startDate: values.dateRange.from,
-        endDate: values.dateRange.to,
-        includeIncome: values.includeIncome,
-        includeIous: values.includeIous
-    });
     onOpenChange(false);
-    toast({
-        title: "Generating Report...",
-        description: "Your report is being prepared for printing."
-    })
+
+    // Give the dialog time to close before printing
+    setTimeout(() => {
+        onGenerate({
+            startDate: values.dateRange.from!,
+            endDate: values.dateRange.to!,
+            includeIncome: values.includeIncome,
+            includeIous: values.includeIous
+        });
+
+        toast({
+            title: "Generating Report...",
+            description: "Your report is being prepared for printing."
+        });
+    }, 200);
   }
 
   return (
