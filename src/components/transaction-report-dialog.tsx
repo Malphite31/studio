@@ -34,7 +34,6 @@ import { useToast } from '@/hooks/use-toast';
 const reportSchema = z.object({
   dateRange: z.custom<DateRange>().optional(),
   includeIncome: z.boolean().default(true),
-  includeIous: z.boolean().default(true),
   includeWishlist: z.boolean().default(false),
   printAll: z.boolean().default(false),
 }).refine(data => data.printAll || (data.dateRange?.from && data.dateRange?.to), {
@@ -46,7 +45,7 @@ const reportSchema = z.object({
 interface TransactionReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onGenerate: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeIous: boolean; includeWishlist: boolean, printAll: boolean; }) => void;
+  onGenerate: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeWishlist: boolean, printAll: boolean; }) => void;
 }
 
 export function TransactionReportDialog({ open, onOpenChange, onGenerate }: TransactionReportDialogProps) {
@@ -60,7 +59,6 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
         to: new Date(),
       },
       includeIncome: true,
-      includeIous: true,
       includeWishlist: false,
       printAll: false,
     },
@@ -69,7 +67,7 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
   const printAll = form.watch('printAll');
 
   function onSubmit(values: z.infer<typeof reportSchema>) {
-    const { dateRange, includeIncome, includeIous, includeWishlist, printAll } = values;
+    const { dateRange, includeIncome, includeWishlist, printAll } = values;
 
     if (!printAll && (!dateRange?.from || !dateRange?.to)) {
       toast({
@@ -87,7 +85,6 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
             startDate: dateRange?.from || new Date(),
             endDate: dateRange?.to || new Date(),
             includeIncome,
-            includeIous,
             includeWishlist,
             printAll,
         });
@@ -187,20 +184,6 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
                 />
                  <FormField
                   control={form.control}
-                  name="includeIous"
-                  render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                          <FormControl>
-                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                              <FormLabel>Debts & Loans (IOUs)</FormLabel>
-                          </div>
-                      </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
                   name="includeWishlist"
                   render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
@@ -217,7 +200,7 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit">Generate & Print</Button>
+              <Button type="submit">Generate &amp; Print</Button>
             </DialogFooter>
           </form>
         </Form>

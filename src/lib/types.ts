@@ -80,7 +80,6 @@ export interface ExportData {
 export interface ReportData {
   expenses: Expense[];
   income: Income[];
-  ious: Iou[];
   wishlist: WishlistItem[];
   summary: {
     totalIncome: number;

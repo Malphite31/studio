@@ -9,7 +9,7 @@ import {
   TableRow,
   TableFooter
 } from '@/components/ui/table';
-import type { UserProfile, ReportData, EWallet, Iou } from '@/lib/types';
+import type { UserProfile, ReportData, EWallet } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { Coins } from 'lucide-react';
@@ -26,47 +26,7 @@ const formatCurrency = (amount: number) =>
 const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toDate() : date);
 
 export default function TransactionReport({ reportData, user, wallets }: TransactionReportProps) {
-  const { expenses, income, ious, wishlist, summary, dateRange, printAll } = reportData;
-
-  const IouTable = ({ title, items }: { title: string; items: Iou[] }) => {
-    if (items.length === 0) return null;
-    const total = items.reduce((sum, item) => sum + item.amount, 0);
-    return (
-      <div className="print-table-section">
-        <h2 className="text-lg font-semibold mt-4 mb-2">{title}</h2>
-        <Table className="print-table">
-          <TableHeader className="print-header">
-            <TableRow>
-              <TableHead className='font-bold text-black'>Date</TableHead>
-              <TableHead className='font-bold text-black'>Description</TableHead>
-              <TableHead className='font-bold text-black'>Status</TableHead>
-              <TableHead className="text-right font-bold text-black">Amount</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((iou) => (
-              <TableRow key={iou.id}>
-                <TableCell>{isValid(toDate(iou.dueDate)) ? format(toDate(iou.dueDate), 'MMM d, yyyy') : 'n/a'}</TableCell>
-                <TableCell className="font-medium">{iou.name}</TableCell>
-                <TableCell>{iou.paid ? 'Paid' : 'Unpaid'}</TableCell>
-                <TableCell className="text-right font-medium">
-                  {iou.type === 'Borrow' ? '-' : '+'}
-                  {formatCurrency(iou.amount)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-           <TableFooter>
-                <TableRow>
-                    <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
-                    <TableCell className="text-right font-bold">{formatCurrency(total)}</TableCell>
-                </TableRow>
-            </TableFooter>
-        </Table>
-      </div>
-    );
-  }
-
+  const { expenses, income, wishlist, summary, dateRange, printAll } = reportData;
 
   return (
     <div className="bg-white text-black font-sans print-container">
@@ -181,14 +141,6 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
           </Table>
         </div>
         
-        {/* IOU Section */}
-        {ious.length > 0 &&
-            <div className="print-table-section">
-                <IouTable title="Debts (Money You Borrowed)" items={ious.filter(i => i.type === 'Borrow')} />
-                <IouTable title="Loans (Money You Lent)" items={ious.filter(i => i.type === 'Lent')} />
-            </div>
-        }
-
         {/* Wishlist Section */}
         {wishlist.length > 0 &&
             <div className="print-table-section">
