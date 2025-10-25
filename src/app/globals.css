@@ -76,6 +76,47 @@
   .no-print {
     display: none !important;
   }
-}
+  
+  @page {
+    size: auto;
+    margin: 0.75in;
+  }
 
-    
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-container {
+    font-size: 10pt;
+  }
+  
+  .print-header {
+    display: table-header-group;
+  }
+
+  .print-table-section {
+    page-break-inside: auto;
+  }
+
+  .print-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .print-table thead {
+    display: table-header-group;
+  }
+
+  .print-table tfoot {
+    display: table-footer-group;
+  }
+
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+}

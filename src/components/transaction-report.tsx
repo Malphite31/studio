@@ -32,8 +32,8 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
   const IouTable = ({ title, items }: { title: string; items: ReportData['ious'] }) => (
     <>
       <h2 className="text-xl font-semibold mt-6 mb-2">{title}</h2>
-      <Table>
-        <TableHeader>
+      <Table className="print-table">
+        <TableHeader className="print-header">
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Description</TableHead>
@@ -65,7 +65,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
   );
 
   return (
-    <div className="bg-white text-black p-8 font-sans">
+    <div className="bg-white text-black p-8 font-sans print-container">
       <header className="mb-8">
         <div className="flex items-center justify-between pb-4 border-b">
           <div className="flex items-center gap-2">
@@ -105,10 +105,10 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
 
         {/* Expenses Section */}
-        <section className="mb-8">
+        <section className="mb-8 print-table-section">
           <h2 className="text-xl font-semibold mb-2">Expenses</h2>
-          <Table>
-            <TableHeader>
+          <Table className="print-table">
+            <TableHeader className="print-header">
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Description</TableHead>
@@ -141,10 +141,10 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
         {/* Income Section */}
         {income.length > 0 &&
-            <section className="mb-8">
+            <section className="mb-8 print-table-section">
             <h2 className="text-xl font-semibold mb-2">Income</h2>
-            <Table>
-                <TableHeader>
+            <Table className="print-table">
+                <TableHeader className="print-header">
                 <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Source</TableHead>
@@ -168,7 +168,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
         {/* IOU Section */}
         {ious.length > 0 &&
-            <section>
+            <section className="print-table-section">
                 <IouTable title="Debts (Money You Borrowed)" items={ious.filter(i => i.type === 'Borrow')} />
                 <IouTable title="Loans (Money You Lent)" items={ious.filter(i => i.type === 'Lent')} />
             </section>
