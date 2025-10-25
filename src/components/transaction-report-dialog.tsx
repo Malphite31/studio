@@ -84,11 +84,6 @@ export function TransactionReportDialog({ open, onOpenChange, onGenerate }: Tran
             includeIncome: values.includeIncome,
             includeIous: values.includeIous
         });
-
-        toast({
-            title: "Generating Report...",
-            description: "Your report is being prepared for printing."
-        });
     }, 200);
   }
 
