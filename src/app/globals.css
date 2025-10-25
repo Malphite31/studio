@@ -79,7 +79,7 @@
   
   @page {
     size: auto;
-    margin: 0.5in;
+    margin: 0.25in;
   }
 
   body {
@@ -88,7 +88,7 @@
   }
 
   .print-container {
-    font-size: 9pt;
+    font-size: 8pt;
   }
   
   .print-header {
@@ -110,6 +110,10 @@
 
   .print-table tfoot {
     display: table-footer-group;
+  }
+
+  .print-table td, .print-table th {
+    padding: 4px 6px;
   }
 
   .page-break-before {

@@ -33,7 +33,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
     const total = items.reduce((sum, item) => sum + item.amount, 0);
     return (
       <div className="print-table-section">
-        <h2 className="text-xl font-semibold mt-6 mb-2">{title}</h2>
+        <h2 className="text-lg font-semibold mt-4 mb-2">{title}</h2>
         <Table className="print-table">
           <TableHeader className="print-header">
             <TableRow>
@@ -50,7 +50,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
                   <TableCell>{isValid(toDate(iou.dueDate)) ? format(toDate(iou.dueDate), 'MMM d, yyyy') : 'n/a'}</TableCell>
                   <TableCell className="font-medium">{iou.name}</TableCell>
                   <TableCell>{iou.paid ? 'Paid' : 'Unpaid'}</TableCell>
-                  <TableCell className={`text-right font-medium`}>
+                  <TableCell className="text-right font-medium">
                     {iou.type === 'Borrow' ? '-' : '+'}
                     {formatCurrency(iou.amount)}
                   </TableCell>
@@ -58,7 +58,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center h-24">No data for this period.</TableCell>
+                <TableCell colSpan={4} className="text-center h-16">No data for this period.</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -75,19 +75,19 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
 
   return (
-    <div className="bg-white text-black p-4 font-sans print-container">
-      <header className="mb-8">
-        <div className="flex items-center justify-between pb-4 border-b">
+    <div className="bg-white text-black font-sans print-container">
+      <header className="mb-4">
+        <div className="flex items-center justify-between pb-2 border-b">
           <div className="flex items-center gap-2">
-            <Coins className="h-8 w-8 text-orange-500" />
-            <span className="text-2xl font-semibold">PennyWise</span>
+            <Coins className="h-6 w-6 text-orange-500" />
+            <span className="text-xl font-semibold">PennyWise</span>
           </div>
           <div className="text-right">
-            <h1 className="text-3xl font-bold">Financial Report</h1>
-            <p className="text-gray-500">{`${format(dateRange.startDate, 'MMM d, yyyy')} - ${format(dateRange.endDate, 'MMM d, yyyy')}`}</p>
+            <h1 className="text-2xl font-bold">Financial Report</h1>
+            <p className="text-gray-500 text-xs">{`${format(dateRange.startDate, 'MMM d, yyyy')} - ${format(dateRange.endDate, 'MMM d, yyyy')}`}</p>
           </div>
         </div>
-        <div className="mt-6">
+        <div className="mt-4 text-xs">
           <p><span className="font-semibold">Report For:</span> {user?.name || user?.username}</p>
           <p><span className="font-semibold">Email:</span> {user?.email}</p>
         </div>
@@ -95,20 +95,20 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
       <main>
         {/* Summary Section */}
-        <section className="mb-8 p-4 rounded-lg border">
-            <h2 className="text-xl font-semibold mb-4">Summary</h2>
-            <div className="grid grid-cols-3 gap-4 text-center">
+        <section className="mb-4 p-2 rounded-lg border">
+            <h2 className="text-lg font-semibold mb-2">Summary</h2>
+            <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
-                    <p className="text-gray-600 text-sm">Total Income</p>
-                    <p className="text-lg font-bold">{formatCurrency(summary.totalIncome)}</p>
+                    <p className="text-gray-600 text-xs">Total Income</p>
+                    <p className="text-base font-bold">{formatCurrency(summary.totalIncome)}</p>
                 </div>
                 <div>
-                    <p className="text-gray-600 text-sm">Total Expenses</p>
-                    <p className="text-lg font-bold">{formatCurrency(summary.totalExpenses)}</p>
+                    <p className="text-gray-600 text-xs">Total Expenses</p>
+                    <p className="text-base font-bold">{formatCurrency(summary.totalExpenses)}</p>
                 </div>
                 <div>
-                    <p className="text-gray-600 text-sm">Net Balance</p>
-                    <p className={`text-lg font-bold`}>{formatCurrency(summary.netBalance)}</p>
+                    <p className="text-gray-600 text-xs">Net Balance</p>
+                    <p className="text-base font-bold">{formatCurrency(summary.netBalance)}</p>
                 </div>
             </div>
         </section>
@@ -116,7 +116,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
         {/* Expenses Section */}
         <div className="print-table-section">
-          <h2 className="text-xl font-semibold mb-2">Expenses</h2>
+          <h2 className="text-lg font-semibold mb-2">Expenses</h2>
           <Table className="print-table">
             <TableHeader className="print-header">
               <TableRow>
@@ -140,7 +140,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center h-24">No expenses for this period.</TableCell>
+                  <TableCell colSpan={5} className="text-center h-16">No expenses for this period.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -156,7 +156,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
         {/* Income Section */}
         {income.length > 0 &&
             <div className="print-table-section page-break-before">
-            <h2 className="text-xl font-semibold mb-2">Income</h2>
+            <h2 className="text-lg font-semibold mb-2">Income</h2>
             <Table className="print-table">
                 <TableHeader className="print-header">
                 <TableRow>
