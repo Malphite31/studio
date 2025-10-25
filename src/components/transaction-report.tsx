@@ -9,10 +9,13 @@ import {
   TableRow,
   TableFooter
 } from '@/components/ui/table';
-import type { UserProfile, ReportData, EWallet } from '@/lib/types';
+import type { UserProfile, ReportData, EWallet, Iou, BudgetGoal } from '@/lib/types';
 import { format, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { Coins } from 'lucide-react';
+import { Progress } from './ui/progress';
+import { cn } from '@/lib/utils';
+import React from 'react';
 
 interface TransactionReportProps {
   reportData: ReportData;
@@ -26,7 +29,35 @@ const formatCurrency = (amount: number) =>
 const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toDate() : date);
 
 export default function TransactionReport({ reportData, user, wallets }: TransactionReportProps) {
-  const { expenses, income, wishlist, summary, dateRange, printAll } = reportData;
+  const { expenses, income, wishlist, ious, budgetGoals, summary, dateRange, printAll } = reportData;
+
+  const budgetStatusData = React.useMemo(() => {
+    if (!budgetGoals || budgetGoals.length === 0) return [];
+    
+    const spendingByCategory = expenses.reduce(
+      (acc, expense) => {
+        acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    return budgetGoals
+      .map((goal) => {
+        const spent = spendingByCategory[goal.category] || 0;
+        const progress = goal.amount > 0 ? (spent / goal.amount) * 100 : 0;
+        return {
+          ...goal,
+          spent,
+          progress: Math.min(progress, 100), // Cap at 100% for visual
+          overBudget: spent > goal.amount
+        };
+      })
+      .sort((a, b) => b.progress - a.progress);
+  }, [expenses, budgetGoals]);
+
+  const debts = ious.filter(iou => iou.type === 'Borrow');
+  const loans = ious.filter(iou => iou.type === 'Lent');
 
   return (
     <div className="bg-white text-black font-sans print-container">
@@ -140,6 +171,86 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
             </TableFooter>
           </Table>
         </div>
+
+        {/* Budget Status Section */}
+        {budgetStatusData.length > 0 &&
+            <div className="print-table-section">
+                <h2 className="text-lg font-semibold mb-2 mt-4">Budget Status</h2>
+                <Table className="print-table">
+                    <TableHeader className="print-header">
+                        <TableRow>
+                            <TableHead className='font-bold text-black'>Category</TableHead>
+                            <TableHead className="text-right font-bold text-black">Spent</TableHead>
+                            <TableHead className="text-right font-bold text-black">Budget</TableHead>
+                            <TableHead className="text-right font-bold text-black">Remaining</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {budgetStatusData.map(status => (
+                            <TableRow key={status.category}>
+                                <TableCell className="font-medium">{status.category}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(status.spent)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(status.amount)}</TableCell>
+                                <TableCell className={cn("text-right", status.overBudget && 'font-bold')}>{formatCurrency(status.amount - status.spent)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        }
+        
+        {/* IOUs Sections */}
+        {debts.length > 0 &&
+            <div className="print-table-section">
+                <h2 className="text-lg font-semibold mb-2 mt-4">Debts (Money You Borrowed)</h2>
+                <Table className="print-table">
+                    <TableHeader className="print-header">
+                        <TableRow>
+                            <TableHead className='font-bold text-black'>Description</TableHead>
+                            <TableHead className='font-bold text-black'>Due Date</TableHead>
+                            <TableHead className='font-bold text-black'>Status</TableHead>
+                            <TableHead className="text-right font-bold text-black">Amount</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {debts.map(iou => (
+                            <TableRow key={iou.id}>
+                                <TableCell className="font-medium">{iou.name}</TableCell>
+                                <TableCell>{isValid(toDate(iou.dueDate)) ? format(toDate(iou.dueDate), 'MMM d, yyyy') : 'n/a'}</TableCell>
+                                <TableCell>{iou.paid ? 'Paid' : 'Unpaid'}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(iou.amount)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        }
+
+        {loans.length > 0 &&
+            <div className="print-table-section">
+                <h2 className="text-lg font-semibold mb-2 mt-4">Loans (Money You Lent)</h2>
+                <Table className="print-table">
+                    <TableHeader className="print-header">
+                        <TableRow>
+                            <TableHead className='font-bold text-black'>Description</TableHead>
+                            <TableHead className='font-bold text-black'>Due Date</TableHead>
+                             <TableHead className='font-bold text-black'>Status</TableHead>
+                            <TableHead className="text-right font-bold text-black">Amount</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {loans.map(iou => (
+                            <TableRow key={iou.id}>
+                                <TableCell className="font-medium">{iou.name}</TableCell>
+                                <TableCell>{isValid(toDate(iou.dueDate)) ? format(toDate(iou.dueDate), 'MMM d, yyyy') : 'n/a'}</TableCell>
+                                <TableCell>{iou.paid ? 'Paid' : 'Unpaid'}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(iou.amount)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        }
         
         {/* Wishlist Section */}
         {wishlist.length > 0 &&

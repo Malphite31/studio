@@ -1,3 +1,5 @@
+'use client';
+
 import { CATEGORIES } from './data';
 import { Timestamp } from 'firebase/firestore';
 
@@ -81,6 +83,8 @@ export interface ReportData {
   expenses: Expense[];
   income: Income[];
   wishlist: WishlistItem[];
+  ious: Iou[];
+  budgetGoals: BudgetGoal[];
   summary: {
     totalIncome: number;
     totalExpenses: number;

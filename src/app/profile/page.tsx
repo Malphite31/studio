@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
 import { ArrowLeft, User, Download } from 'lucide-react';
-import type { UserProfile, ReportData } from '@/lib/types';
+import type { UserProfile, ReportData, BudgetGoal } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
@@ -58,6 +58,17 @@ export default function ProfilePage() {
   const { data: wishlistItems } = useCollection(wishlistQuery);
   const walletsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'wallets') : null, [user, firestore]);
   const { data: wallets } = useCollection(walletsQuery);
+  const budgetGoalsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [user, firestore]);
+  const { data: budgetGoalsData } = useCollection<BudgetGoal>(budgetGoalsQuery);
+
+  const budgetGoals: BudgetGoal[] = useMemo(() => {
+    return budgetGoalsData?.map(goal => ({
+      id: goal.id,
+      category: goal.category,
+      amount: goal.amount,
+      userId: user!.uid,
+    })) || [];
+  }, [budgetGoalsData, user]);
   
   const allWallets = useMemo(() => [CASH_ON_HAND_WALLET, ...(wallets || [])], [wallets]);
   
@@ -333,15 +344,17 @@ export default function ProfilePage() {
 
   const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toDate() : date);
 
-  const handleGenerateReport = (options: { startDate: Date, endDate: Date, includeIncome: boolean, includeWishlist: boolean, printAll: boolean }) => {
-    const { startDate, endDate, includeIncome, includeWishlist, printAll } = options;
+  const handleGenerateReport = (options: { startDate: Date, endDate: Date, includeIncome: boolean, includeWishlist: boolean, includeIous: boolean, includeBudget: boolean, printAll: boolean }) => {
+    const { startDate, endDate, includeIncome, includeWishlist, includeIous, includeBudget, printAll } = options;
 
     const dateInterval = { start: startDate, end: endDate };
 
     const filteredExpenses = printAll ? expenses || [] : expenses?.filter(e => isWithinInterval(toDate(e.date), dateInterval)) || [];
     const filteredIncome = (includeIncome && printAll) ? income || [] : includeIncome ? income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) : [];
     const filteredWishlist = (includeWishlist && printAll) ? wishlistItems || [] : includeWishlist ? wishlistItems : [];
-    
+    const filteredIous = (includeIous && printAll) ? ious || [] : includeIous ? ious?.filter(i => isWithinInterval(toDate(i.dueDate), dateInterval)) : [];
+    const filteredBudgets = includeBudget ? budgetGoals : [];
+
     const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
     const totalIncome = filteredIncome?.reduce((sum, i) => sum + i.amount, 0) || 0;
 
@@ -349,6 +362,8 @@ export default function ProfilePage() {
         expenses: filteredExpenses,
         income: filteredIncome || [],
         wishlist: filteredWishlist || [],
+        ious: filteredIous || [],
+        budgetGoals: filteredBudgets,
         summary: {
             totalIncome: totalIncome,
             totalExpenses: totalExpenses,
@@ -366,6 +381,14 @@ export default function ProfilePage() {
   
 
   if (isProfileLoading) return <div>Loading profile...</div>
+
+  if (window.matchMedia('print').matches && reportData) {
+    return (
+      <>
+        {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} wallets={allWallets} />}
+      </>
+    );
+  }
 
   return (
     <>
