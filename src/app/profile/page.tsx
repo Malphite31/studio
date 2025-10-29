@@ -308,24 +308,28 @@ export default function ProfilePage() {
         
         const newBatch = writeBatch(firestore); // Start a new batch for additions
 
-        // Sample E-Wallets
+        // Sample E-Wallets to unlock 'Wallet Wizard'
         const gcashWalletRef = doc(collection(firestore, 'users', userId, 'wallets'));
-        newBatch.set(gcashWalletRef, { name: 'GCash', balance: 1500, userId });
+        newBatch.set(gcashWalletRef, { name: 'GCash', balance: 15000, userId });
         const paymayaWalletRef = doc(collection(firestore, 'users', userId, 'wallets'));
-        newBatch.set(paymayaWalletRef, { name: 'PayMaya', balance: 800, userId });
+        newBatch.set(paymayaWalletRef, { name: 'PayMaya', balance: 8000, userId });
 
 
-        // Sample Income
+        // Sample Income (more than 5 to unlock 'Money Maker')
         const incomeData = [
             { name: 'Monthly Salary', amount: 50000, date: addDays(startOfThisMonth, 1), walletId: 'cash' },
-            { name: 'Freelance Project', amount: 12000, date: addDays(startOfThisMonth, 10), walletId: gcashWalletRef.id }
+            { name: 'Freelance Project', amount: 12000, date: addDays(startOfThisMonth, 10), walletId: gcashWalletRef.id },
+            { name: 'Side Gig', amount: 5000, date: addDays(startOfThisMonth, 12), walletId: 'cash' },
+            { name: 'Stock Dividends', amount: 3000, date: addDays(startOfThisMonth, 15), walletId: paymayaWalletRef.id },
+            { name: 'Gift from friend', amount: 1000, date: addDays(startOfThisMonth, 18), walletId: 'cash' },
+            { name: 'Online Sales', amount: 4500, date: addDays(startOfThisMonth, 20), walletId: gcashWalletRef.id },
         ];
         incomeData.forEach(inc => {
             const incomeRef = doc(collection(firestore, 'users', userId, 'income'));
             newBatch.set(incomeRef, { ...inc, userId });
         });
         
-        // Sample Expenses
+        // Sample Expenses (more than 10 to unlock 'Penny Pincher')
         const expensesData = [
             { name: 'Weekly Groceries', amount: 3500, category: 'Groceries', date: addDays(startOfThisMonth, 2), walletId: 'cash' },
             { name: 'Train Ticket', amount: 150, category: 'Transport', date: addDays(startOfThisMonth, 3), walletId: 'cash' },
@@ -335,15 +339,18 @@ export default function ProfilePage() {
             { name: 'Internet Bill', amount: 1800, category: 'Utilities', date: addDays(startOfThisMonth, 7), walletId: paymayaWalletRef.id, paymentMethod: 'PayMaya' },
             { name: 'Lunch with friends', amount: 800, category: 'Groceries', date: addDays(startOfThisMonth, 8), walletId: 'cash' },
             { name: 'New T-shirt', amount: 600, category: 'Other', date: addDays(startOfThisMonth, 9), walletId: gcashWalletRef.id, paymentMethod: 'GCash' },
+            { name: 'Coffee run', amount: 250, category: 'Groceries', date: addDays(startOfThisMonth, 11), walletId: 'cash' },
+            { name: 'Taxi fare', amount: 300, category: 'Transport', date: addDays(startOfThisMonth, 13), walletId: paymayaWalletRef.id, paymentMethod: 'PayMaya' },
+            { name: 'Gym membership', amount: 1500, category: 'Other', date: addDays(startOfThisMonth, 14), walletId: gcashWalletRef.id, paymentMethod: 'GCash' },
         ];
         expensesData.forEach(exp => {
             const expenseRef = doc(collection(firestore, 'users', userId, 'expenses'));
             newBatch.set(expenseRef, { ...exp, userId, paymentMethod: exp.paymentMethod || CASH_ON_HAND_WALLET.name });
         });
 
-        // Sample IOUs
+        // Sample IOUs (to unlock 'IOU Initiate', 'Debt Destroyer', 'Generous Lender')
         const iousData = [
-            { name: 'Borrowed for lunch', amount: 500, type: 'Borrow', dueDate: addDays(now, 15), paid: false },
+            { name: 'Borrowed for lunch', amount: 500, type: 'Borrow', dueDate: addDays(now, 15), paid: true },
             { name: 'Lent to a colleague', amount: 1000, type: 'Lent', dueDate: addDays(now, 20), paid: true },
             { name: 'Lent to sister', amount: 300, type: 'Lent', dueDate: addDays(now, 25), paid: false },
         ];
@@ -352,17 +359,21 @@ export default function ProfilePage() {
             newBatch.set(iouRef, { ...iou, userId });
         });
 
-        // Sample Wishlist Items
+        // Sample Wishlist Items (more than 5 for 'Dream Big', one funded for 'Goal Getter')
         const wishlistData = [
             { name: 'New Headphones', targetAmount: 8000, savedAmount: 1500, purchased: false },
             { name: 'Weekend Trip', targetAmount: 10000, savedAmount: 10000, purchased: false },
+            { name: 'Ergonomic Chair', targetAmount: 12000, savedAmount: 2000, purchased: false },
+            { name: 'Smart Watch', targetAmount: 15000, savedAmount: 0, purchased: false },
+            { name: 'New Laptop', targetAmount: 50000, savedAmount: 5000, purchased: false },
+            { name: 'Camera Lens', targetAmount: 25000, savedAmount: 100, purchased: false },
         ];
         wishlistData.forEach(wish => {
             const wishRef = doc(collection(firestore, 'users', userId, 'wishlist'));
             newBatch.set(wishRef, { ...wish, userId });
         });
         
-        // Sample Budgets for all categories
+        // Sample Budgets for all categories (to unlock 'Budget Beginner')
         const budgetsData = CATEGORIES.map(category => {
             let amount = 2000;
             if (category === 'Groceries') amount = 10000;
@@ -378,7 +389,7 @@ export default function ProfilePage() {
         });
 
         await newBatch.commit();
-        toast({ title: 'Seeding Complete!', description: 'Your account is now populated with sample data.' });
+        toast({ title: 'Seeding Complete!', description: 'Your account is now populated with sample data to unlock achievements.' });
 
     } catch (error: any) {
         console.error("Seeding error: ", error);
@@ -729,3 +740,5 @@ export default function ProfilePage() {
     </>
   );
 }
+
+    
