@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 
 import { Button } from '@/components/ui/button';
@@ -566,7 +566,6 @@ export default function ProfilePage() {
         toast({ title: 'Generating PDF...', description: 'Your PDF report is being created.' });
         
         const doc = new jsPDF();
-        const autoTable = (doc as any).autoTable;
 
         // Title
         doc.setFontSize(20);
@@ -578,14 +577,14 @@ export default function ProfilePage() {
         doc.text(`Email: ${userProfile.email}`, 14, 38);
         doc.text(`Date: ${format(new Date(), 'yyyy-MM-dd')}`, 14, 44);
 
-        let finalY = 50;
+        let startY = 50;
 
         // Summary Table
         const totalIncome = income?.reduce((sum, i) => sum + i.amount, 0) || 0;
         const totalExpenses = expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
         const netBalance = totalIncome - totalExpenses;
         autoTable(doc, {
-            startY: finalY,
+            startY,
             head: [['Summary', 'Amount']],
             body: [
                 ['Total Income', `₱${totalIncome.toFixed(2)}`],
@@ -595,14 +594,14 @@ export default function ProfilePage() {
             theme: 'striped',
             headStyles: { fillColor: [79, 129, 189] },
         });
-        finalY = (doc as any).lastAutoTable.finalY + 10;
+        startY = (doc as any).lastAutoTable.finalY + 10;
         
         const formatDate = (date: any) => (date ? format(toDate(date), 'yyyy-MM-dd') : 'N/A');
         
         // Income Table
         if (income && income.length > 0) {
             autoTable(doc, {
-                startY: finalY,
+                startY,
                 head: [['Date', 'Source', 'Wallet', 'Amount']],
                 body: income.map(i => [
                     formatDate(i.date),
@@ -612,15 +611,14 @@ export default function ProfilePage() {
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [79, 129, 189] },
-                didDrawPage: (data: any) => { finalY = data.cursor.y; }
             });
-            finalY = (doc as any).lastAutoTable.finalY + 10;
+            startY = (doc as any).lastAutoTable.finalY + 10;
         }
 
         // Expenses Table
         if (expenses && expenses.length > 0) {
             autoTable(doc, {
-                startY: finalY,
+                startY,
                 head: [['Date', 'Description', 'Category', 'Payment', 'Amount']],
                 body: expenses.map(e => [
                     formatDate(e.date),
@@ -631,9 +629,8 @@ export default function ProfilePage() {
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [79, 129, 189] },
-                didDrawPage: (data: any) => { finalY = data.cursor.y; }
             });
-            finalY = (doc as any).lastAutoTable.finalY + 10;
+            startY = (doc as any).lastAutoTable.finalY + 10;
         }
 
         doc.save('PennyWise_Report.pdf');
