@@ -406,8 +406,8 @@ export default function ProfilePage() {
     const dateInterval = { start: startDate, end: endDate };
 
     const filteredExpenses = printAll ? expenses || [] : expenses?.filter(e => isWithinInterval(toDate(e.date), dateInterval)) || [];
-    const filteredIncome = (includeIncome && printAll) ? income || [] : includeIncome ? income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) : [];
-    const filteredWishlist = (includeWishlist && printAll) ? wishlistItems || [] : includeWishlist ? wishlistItems : [];
+    const filteredIncome = includeIncome ? (printAll ? income || [] : income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) || []) : [];
+    const filteredWishlist = includeWishlist ? (printAll ? wishlistItems || [] : wishlistItems || []) : [];
     const filteredBudgets = includeBudget ? budgetGoals : [];
 
     const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -415,8 +415,8 @@ export default function ProfilePage() {
 
     setReportData({
         expenses: filteredExpenses,
-        income: filteredIncome || [],
-        wishlist: filteredWishlist || [],
+        income: filteredIncome,
+        wishlist: filteredWishlist,
         budgetGoals: filteredBudgets,
         summary: {
             totalIncome: totalIncome,
