@@ -2,7 +2,7 @@
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { ALL_ACHIEVEMENTS, type AchievementData } from '@/lib/achievements';
 import type { UserDataAggregate, Achievement } from '@/lib/types';
-import { getSdks } from '@/firebase/index';
+import { getSdks, errorEmitter, FirestorePermissionError } from '@/firebase/index';
 
 /**
  * Checks for and unlocks new achievements for a user.
@@ -31,23 +31,28 @@ export const checkAndUnlockAchievements = async (
   }
 
   if (newlyUnlocked.length > 0) {
-    try {
-      const batch = writeBatch(firestore);
-      for (const achievement of newlyUnlocked) {
-        const achievementRef = doc(firestore, 'users', userId, 'achievements', achievement.id);
-        const newAchievement: Omit<Achievement, 'userId'> = {
-          id: achievement.id,
-          unlockedAt: serverTimestamp(),
-        };
-        batch.set(achievementRef, newAchievement);
-      }
-      await batch.commit();
+    const batch = writeBatch(firestore);
+    const achievementsToCreate: any[] = [];
+    for (const achievement of newlyUnlocked) {
+      const achievementRef = doc(firestore, 'users', userId, 'achievements', achievement.id);
+      const newAchievementData: Omit<Achievement, 'userId' | 'id'> = {
+        unlockedAt: serverTimestamp(),
+      };
+      batch.set(achievementRef, newAchievementData);
+      achievementsToCreate.push({ id: achievement.id, ...newAchievementData });
+    }
 
+    batch.commit().then(() => {
       if (onNewAchievementsUnlocked) {
         onNewAchievementsUnlocked(newlyUnlocked);
       }
-    } catch (error) {
-      console.error("Failed to save new achievements:", error);
-    }
+    }).catch(error => {
+      const contextualError = new FirestorePermissionError({
+        path: `users/${userId}/achievements`,
+        operation: 'write',
+        requestResourceData: achievementsToCreate,
+      });
+      errorEmitter.emit('permission-error', contextualError);
+    });
   }
 };
