@@ -129,7 +129,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
         {/* Expenses Section */}
         <div className="print-table-section">
-          <h2 className="text-lg font-semibold mb-2">Expenses</h2>
+          <h2 className="text-lg font-semibold mb-2 mt-4">Expenses</h2>
           <Table className="print-table">
             <TableHeader className="print-header">
               <TableRow>
@@ -168,7 +168,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
 
         {/* Budget Status Section */}
         {budgetStatusData.length > 0 &&
-            <div className="print-table-section">
+            <div className="print-table-section page-break-before">
                 <h2 className="text-lg font-semibold mb-2 mt-4">Budget Status</h2>
                 <Table className="print-table">
                     <TableHeader className="print-header">
@@ -185,7 +185,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
                                 <TableCell className="font-medium">{status.category}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(status.spent)}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(status.amount)}</TableCell>
-                                <TableCell className={cn("text-right", status.overBudget && 'font-bold')}>{formatCurrency(status.amount - status.spent)}</TableCell>
+                                <TableCell className={cn("text-right font-medium", (status.amount - status.spent) < 0 && 'text-red-600')}>{formatCurrency(status.amount - status.spent)}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -195,7 +195,7 @@ export default function TransactionReport({ reportData, user, wallets }: Transac
         
         {/* Wishlist Section */}
         {wishlist.length > 0 &&
-            <div className="print-table-section">
+            <div className="print-table-section page-break-before">
                 <h2 className="text-lg font-semibold mb-2 mt-4">Wishlist Items</h2>
                 <Table className="print-table">
                     <TableHeader className="print-header">
