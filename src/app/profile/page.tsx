@@ -27,12 +27,12 @@ import { addDays, startOfMonth, isWithinInterval, format, isValid } from 'date-f
 import { CATEGORIES, CASH_ON_HAND_WALLET } from '@/lib/data';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { TransactionReportDialog } from '@/components/transaction-report-dialog';
-import TransactionReport from '@/components/transaction-report';
 import { Timestamp } from 'firebase/firestore';
 import { ALL_ACHIEVEMENTS, type AchievementData } from '@/lib/achievements';
 import { checkAndUnlockAchievements } from '@/services/check-achievements';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ReportViewerDialog } from '@/components/report-viewer-dialog';
 
 
 const profileSchema = z.object({
@@ -47,7 +47,8 @@ export default function ProfilePage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isReportConfigDialogOpen, setIsReportConfigDialogOpen] = useState(false);
+  const [isReportViewerOpen, setIsReportViewerOpen] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
@@ -429,8 +430,8 @@ export default function ProfilePage() {
         },
         printAll,
     });
-
-    setTimeout(() => window.print(), 500);
+    
+    setIsReportViewerOpen(true);
   };
   
     const handleSpreadsheetExport = () => {
@@ -557,20 +558,9 @@ export default function ProfilePage() {
 
   if (isProfileLoading) return <div>Loading profile...</div>
 
-  if (typeof window !== 'undefined' && window.matchMedia('print').matches && reportData) {
-    return (
-      <>
-        {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} wallets={allWallets} />}
-      </>
-    );
-  }
-
   return (
     <>
-      <div className="hidden print:block">
-        {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} wallets={allWallets} />}
-      </div>
-      <div className="flex min-h-screen w-full flex-col bg-background p-4 md:p-8 no-print">
+      <div className="flex min-h-screen w-full flex-col bg-background p-4 md:p-8">
         <div className='mb-4'>
             <Button asChild variant="outline">
                 <Link href="/"><ArrowLeft className='mr-2' /> Back to Dashboard</Link>
@@ -724,9 +714,9 @@ export default function ProfilePage() {
                      <Button variant="outline" onClick={() => importFileInputRef.current?.click()}>Import from JSON</Button>
                      <Button variant="secondary" onClick={handleSeedData}>Seed Dummy Data</Button>
                      <Button variant="destructive" onClick={() => setResetConfirmOpen(true)}>Reset All Data</Button>
-                     <Button variant="outline" onClick={() => setIsReportDialogOpen(true)} className="lg:col-span-3">
+                     <Button variant="outline" onClick={() => setIsReportConfigDialogOpen(true)} className="lg:col-span-3">
                         <Printer className="mr-2 h-4 w-4" />
-                        Download Report
+                        View & Print Report
                     </Button>
                      <input
                         type="file"
@@ -747,10 +737,20 @@ export default function ProfilePage() {
       </div>
 
       <TransactionReportDialog
-        open={isReportDialogOpen}
-        onOpenChange={setIsReportDialogOpen}
+        open={isReportConfigDialogOpen}
+        onOpenChange={setIsReportConfigDialogOpen}
         onGenerate={handleGenerateReport}
       />
+
+       {reportData && userProfile && (
+        <ReportViewerDialog
+          open={isReportViewerOpen}
+          onOpenChange={setIsReportViewerOpen}
+          reportData={reportData}
+          user={userProfile}
+          wallets={allWallets}
+        />
+      )}
 
       <ConfirmationDialog
         open={isImportConfirmOpen}
@@ -771,3 +771,5 @@ export default function ProfilePage() {
     </>
   );
 }
+
+    
