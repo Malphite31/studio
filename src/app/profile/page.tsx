@@ -8,6 +8,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
-import { ArrowLeft, User, Download, FileSpreadsheet, Printer } from 'lucide-react';
+import { ArrowLeft, User, Download, FileSpreadsheet, Printer, FileText } from 'lucide-react';
 import type { UserProfile, ReportData, BudgetGoal, Expense, Income, Iou, WishlistItem, Achievement, EWallet } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -555,6 +558,88 @@ export default function ProfilePage() {
         toast({ title: 'Export Complete!', description: 'Your styled Excel report has been downloaded.' });
     };
 
+    const handlePdfExport = () => {
+        if (!user || !userProfile) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to export data.' });
+            return;
+        }
+        toast({ title: 'Generating PDF...', description: 'Your PDF report is being created.' });
+        
+        const doc = new jsPDF();
+        const autoTable = (doc as any).autoTable;
+
+        // Title
+        doc.setFontSize(20);
+        doc.text("PennyWise Financial Report", 14, 22);
+
+        // User Info
+        doc.setFontSize(11);
+        doc.text(`Report for: ${userProfile.name || userProfile.username}`, 14, 32);
+        doc.text(`Email: ${userProfile.email}`, 14, 38);
+        doc.text(`Date: ${format(new Date(), 'yyyy-MM-dd')}`, 14, 44);
+
+        let finalY = 50;
+
+        // Summary Table
+        const totalIncome = income?.reduce((sum, i) => sum + i.amount, 0) || 0;
+        const totalExpenses = expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
+        const netBalance = totalIncome - totalExpenses;
+        autoTable(doc, {
+            startY: finalY,
+            head: [['Summary', 'Amount']],
+            body: [
+                ['Total Income', `₱${totalIncome.toFixed(2)}`],
+                ['Total Expenses', `₱${totalExpenses.toFixed(2)}`],
+                ['Net Balance', `₱${netBalance.toFixed(2)}`],
+            ],
+            theme: 'striped',
+            headStyles: { fillColor: [79, 129, 189] },
+        });
+        finalY = (doc as any).lastAutoTable.finalY + 10;
+        
+        const formatDate = (date: any) => (date ? format(toDate(date), 'yyyy-MM-dd') : 'N/A');
+        
+        // Income Table
+        if (income && income.length > 0) {
+            autoTable(doc, {
+                startY: finalY,
+                head: [['Date', 'Source', 'Wallet', 'Amount']],
+                body: income.map(i => [
+                    formatDate(i.date),
+                    i.name,
+                    allWallets.find(w => w.id === i.walletId)?.name || 'N/A',
+                    `+ ₱${i.amount.toFixed(2)}`
+                ]),
+                theme: 'striped',
+                headStyles: { fillColor: [79, 129, 189] },
+                didDrawPage: (data: any) => { finalY = data.cursor.y; }
+            });
+            finalY = (doc as any).lastAutoTable.finalY + 10;
+        }
+
+        // Expenses Table
+        if (expenses && expenses.length > 0) {
+            autoTable(doc, {
+                startY: finalY,
+                head: [['Date', 'Description', 'Category', 'Payment', 'Amount']],
+                body: expenses.map(e => [
+                    formatDate(e.date),
+                    e.name,
+                    e.category,
+                    e.paymentMethod || 'N/A',
+                    `- ₱${e.amount.toFixed(2)}`
+                ]),
+                theme: 'striped',
+                headStyles: { fillColor: [79, 129, 189] },
+                didDrawPage: (data: any) => { finalY = data.cursor.y; }
+            });
+            finalY = (doc as any).lastAutoTable.finalY + 10;
+        }
+
+        doc.save('PennyWise_Report.pdf');
+        toast({ title: 'PDF Downloaded!', description: 'Your report has been saved.' });
+    };
+
 
   if (isProfileLoading) return <div>Loading profile...</div>
 
@@ -711,10 +796,11 @@ export default function ProfilePage() {
                 <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                      <Button variant="outline" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export JSON</Button>
                      <Button variant="outline" onClick={handleSpreadsheetExport}><FileSpreadsheet className="mr-2 h-4 w-4" />Export Excel</Button>
+                     <Button variant="outline" onClick={handlePdfExport}><FileText className="mr-2 h-4 w-4" />Download PDF</Button>
                      <Button variant="outline" onClick={() => importFileInputRef.current?.click()}>Import from JSON</Button>
                      <Button variant="secondary" onClick={handleSeedData}>Seed Dummy Data</Button>
                      <Button variant="destructive" onClick={() => setResetConfirmOpen(true)}>Reset All Data</Button>
-                     <Button variant="outline" onClick={() => setIsReportConfigDialogOpen(true)} className="lg:col-span-3">
+                     <Button variant="outline" onClick={() => setIsReportConfigDialogOpen(true)} className="sm:col-span-2 lg:col-span-3">
                         <Printer className="mr-2 h-4 w-4" />
                         View & Print Report
                     </Button>
@@ -771,5 +857,3 @@ export default function ProfilePage() {
     </>
   );
 }
-
-    
