@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
-import { ArrowLeft, User, Download, FileSpreadsheet, Share2 } from 'lucide-react';
+import { ArrowLeft, User, Download, FileSpreadsheet } from 'lucide-react';
 import type { UserProfile, ReportData, BudgetGoal, Expense, Income, Iou, WishlistItem, Achievement, EWallet } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -31,8 +31,6 @@ import { Timestamp } from 'firebase/firestore';
 import { ALL_ACHIEVEMENTS, type AchievementData } from '@/lib/achievements';
 import { checkAndUnlockAchievements } from '@/services/check-achievements';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { generateAchievementImage } from '@/ai/flows/generate-achievement-image-flow';
-import { AchievementImageDialog } from '@/components/achievement-image-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -50,11 +48,6 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
-
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [generatedImageData, setGeneratedImageData] = useState<{imageUrl: string; achievementTitle: string} | null>(null);
-  const [isImageDialogOpened, setIsImageDialogOpened] = useState(false);
-
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
@@ -520,34 +513,6 @@ export default function ProfilePage() {
         toast({ title: 'Export Complete!', description: 'Your CSV file has been downloaded.' });
     };
 
-    const handleShareAchievement = async (achievement: AchievementData) => {
-        if (!userProfile) return;
-
-        setIsGeneratingImage(true);
-        try {
-            const result = await generateAchievementImage({
-                achievementTitle: achievement.title,
-                achievementDescription: achievement.description,
-                userName: userProfile.name || userProfile.username,
-                iconName: achievement.icon.displayName || 'Award'
-            });
-            setGeneratedImageData({
-                imageUrl: result.imageUrl,
-                achievementTitle: achievement.title
-            });
-            setIsImageDialogOpened(true);
-        } catch (error) {
-            console.error("Failed to generate achievement image", error);
-            toast({
-                variant: "destructive",
-                title: "Image Generation Failed",
-                description: "Could not create the achievement image. Please try again later."
-            });
-        } finally {
-            setIsGeneratingImage(false);
-        }
-    };
-
 
   if (isProfileLoading) return <div>Loading profile...</div>
 
@@ -687,17 +652,6 @@ export default function ProfilePage() {
                                                     )}>
                                                         {ach.title}
                                                     </p>
-                                                    {ach.unlocked && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="absolute top-1 right-1 h-7 w-7"
-                                                            onClick={() => handleShareAchievement(ach)}
-                                                            disabled={isGeneratingImage}
-                                                        >
-                                                            <Share2 className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent>
@@ -749,12 +703,6 @@ export default function ProfilePage() {
 
         </div>
       </div>
-       <AchievementImageDialog
-        open={isImageDialogOpened}
-        onOpenChange={setIsImageDialogOpened}
-        imageData={generatedImageData}
-        isGenerating={isGeneratingImage}
-      />
 
       <TransactionReportDialog
         open={isReportDialogOpen}
