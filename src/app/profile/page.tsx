@@ -448,7 +448,18 @@ export default function ProfilePage() {
             return isValid(d) ? format(d, 'yyyy-MM-dd HH:mm:ss') : '';
         };
 
-        const headerStyle = { font: { bold: true } };
+        const headerStyle = {
+            font: { bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "4F81BD" } },
+            alignment: { horizontal: "center", vertical: "center" },
+        };
+
+        const cellBorder = {
+            top: { style: "thin" },
+            bottom: { style: "thin" },
+            left: { style: "thin" },
+            right: { style: "thin" },
+        };
 
         // --- Summary Sheet ---
         const totalIncome = income?.reduce((sum, i) => sum + i.amount, 0) || 0;
@@ -464,7 +475,7 @@ export default function ProfilePage() {
             ['Net Balance', netBalance],
         ];
         const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-        summaryWs['A1'].s = { font: { bold: true, sz: 16 } };
+        summaryWs['A1'].s = { font: { bold: true, sz: 16, color: { rgb: "4F81BD" } } };
         summaryWs['A4'].s = headerStyle;
         summaryWs['B4'].s = headerStyle;
         summaryWs['B5'].z = '"₱"#,##0.00';
@@ -480,17 +491,23 @@ export default function ProfilePage() {
             const body = data.map(rowMapper);
             const ws = XLSX.utils.aoa_to_sheet([headers, ...body]);
             
-            // Style Headers
             const range = XLSX.utils.decode_range(ws['!ref']!);
-            for(let C = range.s.c; C <= range.e.c; ++C) {
-                const address = XLSX.utils.encode_cell({r: 0, c: C});
-                if(!ws[address]) continue;
-                ws[address].s = headerStyle;
+            for(let R = range.s.r; R <= range.e.r; ++R) {
+                for(let C = range.s.c; C <= range.e.c; ++C) {
+                    const cell_address = {c:C, r:R};
+                    const cell_ref = XLSX.utils.encode_cell(cell_address);
+                    if(!ws[cell_ref]) continue;
+
+                    ws[cell_ref].s = { ...ws[cell_ref].s, border: cellBorder };
+                    
+                    if(R === 0) { // Header row
+                        ws[cell_ref].s = { ...ws[cell_ref].s, ...headerStyle };
+                    }
+                }
             }
 
-            // Auto-fit columns
             const cols = headers.map((_, i) => ({
-                wch: Math.max(...[headers[i].length, ...body.map(row => String(row[i] || '').length)]) + 2
+                wch: Math.max(...[headers[i].length, ...body.map(row => String(row[i]?.v ?? row[i] ?? '').length)]) + 2
             }));
             ws['!cols'] = cols;
 
@@ -528,7 +545,7 @@ export default function ProfilePage() {
             item.name,
             { v: item.targetAmount, t: 'n', z: '"₱"#,##0.00' },
             { v: item.savedAmount, t: 'n', z: '"₱"#,##0.00' },
-            { v: (item.savedAmount / item.targetAmount), t: 'n', z: '0%' },
+            { v: (item.targetAmount > 0 ? (item.savedAmount / item.targetAmount) : 0), t: 'n', z: '0%' },
             item.purchased ? 'Purchased' : 'Saving'
         ]);
 
