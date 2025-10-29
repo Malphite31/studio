@@ -23,7 +23,7 @@ import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
 import { ArrowLeft, User, Download, FileSpreadsheet, Printer, FileText } from 'lucide-react';
 import type { UserProfile, ReportData, BudgetGoal, Expense, Income, Iou, WishlistItem, Achievement, EWallet } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { addDays, startOfMonth, isWithinInterval, format, isValid } from 'date-fns';
@@ -799,7 +799,7 @@ export default function ProfilePage() {
                      <Button variant="destructive" onClick={() => setResetConfirmOpen(true)}>Reset All Data</Button>
                      <Button variant="outline" onClick={() => setIsReportConfigDialogOpen(true)} className="sm:col-span-2 lg:col-span-3">
                         <Printer className="mr-2 h-4 w-4" />
-                        View & Print Report
+                        Download Report
                     </Button>
                      <input
                         type="file"

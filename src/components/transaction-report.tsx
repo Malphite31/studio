@@ -14,7 +14,7 @@ import { format, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { Coins } from 'lucide-react';
 import { Progress } from './ui/progress';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import React from 'react';
 
 interface TransactionReportProps {
@@ -22,9 +22,6 @@ interface TransactionReportProps {
   user: UserProfile | null;
   wallets: EWallet[];
 }
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
 
 const toDate = (date: Date | Timestamp) => (date instanceof Timestamp ? date.toDate() : date);
 

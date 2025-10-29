@@ -27,6 +27,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
 import { ConfirmationDialog } from './confirmation-dialog';
+import { formatCurrency } from '@/lib/utils';
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Must be positive.' }),
@@ -39,10 +40,6 @@ interface WishlistItemProps {
   purchaseWishlistItem: (item: WishlistItemType) => void;
   wallets: EWallet[];
 }
-
-const formatCurrency = (amount: number) => 
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
-
 
 export default function WishlistItem({ item, contributeToWishlist, purchaseWishlistItem, wallets }: WishlistItemProps) {
   const { toast } = useToast();

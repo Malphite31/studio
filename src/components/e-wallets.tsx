@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import type { EWallet } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
-
+import { formatCurrency } from '@/lib/utils';
 
 interface EWalletsProps {
   wallets: EWallet[];
@@ -38,10 +38,6 @@ const addFormSchema = z.object({
 const editFormSchema = z.object({
     name: z.string().min(2, { message: 'Wallet name must be at least 2 characters.' }),
 });
-
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
 
 export default function EWallets({ wallets, addWallet, updateWallet, deleteWallet }: EWalletsProps) {
   const [isAddOpen, setAddOpen] = useState(false);

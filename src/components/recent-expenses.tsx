@@ -35,6 +35,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/utils';
 
 interface RecentExpensesProps {
   expenses: Expense[];
@@ -42,9 +43,6 @@ interface RecentExpensesProps {
   onDeleteExpense: (expense: Expense) => void;
   wallets: EWallet[];
 }
-
-const formatCurrency = (amount: number) => 
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
 
 export default function RecentExpenses({ expenses, onUpdateExpense, onDeleteExpense, wallets }: RecentExpensesProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);

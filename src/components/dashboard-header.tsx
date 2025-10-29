@@ -32,7 +32,7 @@ import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { cn } from '@/lib/utils';
 import { TransactionReportDialog } from './transaction-report-dialog';
-
+import { formatCurrency } from '@/lib/utils';
 
 interface DashboardHeaderProps {
   balance: number;
@@ -44,10 +44,6 @@ interface DashboardHeaderProps {
   wallets: EWallet[];
   onGenerateReport: (options: { startDate: Date; endDate: Date; includeIncome: boolean; includeWishlist: boolean; includeBudget: boolean; printAll: boolean; }) => void;
 }
-
-const formatCurrency = (amount: number) => 
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
-
 
 export default function DashboardHeader({
   balance,

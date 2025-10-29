@@ -26,7 +26,7 @@ import { Button } from './ui/button';
 import { useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
-
+import { formatCurrency } from '@/lib/utils';
 
 interface IncomeTrackerProps {
   income: Income[];
@@ -35,10 +35,6 @@ interface IncomeTrackerProps {
   onDeleteIncome: (income: Income) => void;
   addIncome: (income: Omit<Income, 'id'| 'date' | 'userId'>) => void;
 }
-
-const formatCurrency = (amount: number) => 
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
-
 
 export default function IncomeTracker({ income, wallets, onUpdateIncome, onDeleteIncome, addIncome }: IncomeTrackerProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);

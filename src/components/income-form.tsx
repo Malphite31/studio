@@ -33,6 +33,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { Income, EWallet } from '@/lib/types';
+import { formatCurrency } from '@/lib/utils';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -97,7 +98,7 @@ export function IncomeForm({
        toast({ title: 'Income Updated!', description: `${values.name} has been successfully updated.` });
     } else if (addIncome) {
       addIncome(values);
-      toast({ title: 'Income Added!', description: `An income of ${values.amount} has been recorded.` });
+      toast({ title: 'Income Added!', description: `An income of ${formatCurrency(values.amount)} has been recorded.` });
     }
     setOpen(false);
   }

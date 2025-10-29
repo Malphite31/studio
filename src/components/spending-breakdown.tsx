@@ -19,14 +19,11 @@ import {
 } from '@/components/ui/chart';
 import type { Expense, Category } from '@/lib/types';
 import { CATEGORIES } from '@/lib/data';
+import { formatCurrency } from '@/lib/utils';
 
 interface SpendingBreakdownProps {
   expenses: Expense[];
 }
-
-const formatCurrency = (amount: number) => 
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
-
 
 export default function SpendingBreakdown({ expenses }: SpendingBreakdownProps) {
   const { chartData, chartConfig } = React.useMemo(() => {

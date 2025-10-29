@@ -6,6 +6,9 @@ import { FirebaseClientProvider } from '@/firebase';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import Footer from '@/components/footer';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: 'PennyWise',
@@ -27,7 +30,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased flex flex-col min-h-screen">
+      <body className={'antialiased flex flex-col min-h-screen ${inter.variable} font-sans'}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

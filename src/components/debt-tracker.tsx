@@ -26,15 +26,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatCurrency } from '@/lib/utils';
 
 interface DebtTrackerProps {
   ious: Iou[];
   markAsPaid: (id: string) => void;
 }
-
-const formatCurrency = (amount: number) => 
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
-
 
 export default function DebtTracker({ ious, markAsPaid }: DebtTrackerProps) {
   const { toast } = useToast();

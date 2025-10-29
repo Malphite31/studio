@@ -40,7 +40,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { CATEGORIES, CASH_ON_HAND_WALLET } from '@/lib/data';
 import type { Expense, Iou, Income, EWallet, Category } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -159,7 +159,7 @@ export function ExpenseForm({
         });
         toast({
             title: 'Income added!',
-            description: `You've recorded an income of ₱${values.amount}.`,
+            description: `You've recorded an income of ${formatCurrency(values.amount)}.`,
         });
     } else {
       const expenseData: Omit<Expense, 'id'| 'date' | 'userId'> = {

@@ -24,6 +24,7 @@ import { useDoc } from '@/firebase/firestore/use-doc';
 import TransactionReport from '@/components/transaction-report';
 import { isWithinInterval, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
+import { formatCurrency } from '@/lib/utils';
 
 
 export default function DashboardPage() {
@@ -286,7 +287,7 @@ export default function DashboardPage() {
         userId: user.uid,
     };
     await addDocumentNonBlocking(walletsQuery, newWallet);
-    toast({ title: 'E-Wallet Added!', description: `${name} has been added with a balance of ₱${balance}.`});
+    toast({ title: 'E-Wallet Added!', description: `${name} has been added with a balance of ${formatCurrency(balance)}.`});
   };
 
   const updateWallet = async (id: string, name: string) => {

@@ -13,15 +13,12 @@ import type { Expense, BudgetGoal } from '@/lib/types';
 import { CATEGORY_COLORS } from '@/lib/data';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 
 interface BudgetStatusProps {
   expenses: Expense[];
   budgetGoals: BudgetGoal[];
 }
-
-const formatCurrency = (amount: number) => 
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(amount).replace('PHP', '₱');
-
 
 export default function BudgetStatus({
   expenses,
