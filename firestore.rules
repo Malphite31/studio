@@ -1,243 +1,246 @@
 /**
- * @fileoverview Firestore Security Rules for SpendWise application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model.  Each user has full
- * control over their own data, and no access to other users' data.  Data validation
- * is relaxed in this initial prototyping phase to allow for rapid schema iteration.
- *
- * Data Structure:
- * All data is nested under /users/{userId}, where {userId} corresponds to the
- * Firebase Authentication UID.  This structure ensures clear ownership and prevents
- * unauthorized data access.
- *
- * Key Security Decisions:
- * - Users can only create, read, update, and delete their own data.
- * - Data validation is minimal during prototyping, focusing on ownership.
- * - Listing other users' data is disallowed.
- *
- * Denormalization for Authorization:
- * To simplify and optimize rules, each document includes a `userId` field that
- * MUST match the `userId` in the document path. This avoids the need for complex
- * queries or joins to verify ownership.
+ * @file Firestore Security Rules for SpendWise
+ * @version Prototyping
+ * @core_philosophy This ruleset enforces a strict user-ownership model, ensuring that users can only access their own data.
+ * @data_structure All data is nested under /users/{userId}, with subcollections for expenses, categories, budgets, wishlist items, IOUs, income, wallets, and achievements.
+ * @key_security_decisions User listing is disallowed. The default security posture for ambiguous relationships is strict owner-only access.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces user-specific access control for user profiles.
+     * @description Secure user profiles. Only the authenticated user can read and write their own profile.
      * @path /users/{userId}
-     * @allow (create) User with UID 'user_abc' can create their profile at /users/user_abc.
-     * @deny (create) User with UID 'user_xyz' cannot create a profile at /users/user_abc.
-     * @allow (get) User with UID 'user_abc' can read their profile at /users/user_abc.
-     * @deny (get) User with UID 'user_xyz' cannot read the profile at /users/user_abc.
-     * @allow (update) User with UID 'user_abc' can update their profile at /users/user_abc.
-     * @deny (update) User with UID 'user_xyz' cannot update the profile at /users/user_abc.
-     * @allow (delete) User with UID 'user_abc' can delete their profile at /users/user_abc.
-     * @deny (delete) User with UID 'user_xyz' cannot delete the profile at /users/user_abc.
+     * @allow (create) - User with UID 'user123' can create their profile if request.auth.uid == 'user123'.
+     * @allow (get, update, delete) - User with UID 'user123' can read/update/delete their profile.
+     * @deny (create) - User with UID 'user456' cannot create a profile with ID 'user123'.
+     * @deny (get, update, delete) - User with UID 'user456' cannot read/update/delete the profile of user 'user123'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access control for expenses.
+     * @description Secure expense data for a specific user.
      * @path /users/{userId}/expenses/{expenseId}
-     * @allow (create) User with UID 'user_abc' can create an expense at /users/user_abc/expenses/expense123.
-     * @deny (create) User with UID 'user_xyz' cannot create an expense at /users/user_abc/expenses/expense123.
-     * @allow (get) User with UID 'user_abc' can read their expense at /users/user_abc/expenses/expense123.
-     * @deny (get) User with UID 'user_xyz' cannot read the expense at /users/user_abc/expenses/expense123.
-     * @allow (update) User with UID 'user_abc' can update their expense at /users/user_abc/expenses/expense123.
-     * @deny (update) User with UID 'user_xyz' cannot update the expense at /users/user_abc/expenses/expense123.
-     * @allow (delete) User with UID 'user_abc' can delete their expense at /users/user_abc/expenses/expense123.
-     * @deny (delete) User with UID 'user_xyz' cannot delete the expense at /users/user_abc/expenses/expense123.
+     * @allow (create) - User with UID 'user123' can create an expense.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read/list/update/delete their own expenses.
+     * @deny (create) - User with UID 'user456' cannot create an expense for user 'user123'.
+     * @deny (get, list, update, delete) - User with UID 'user456' cannot access expenses of user 'user123'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/expenses/{expenseId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access control for categories.
+     * @description Secure expense categories created by a specific user.
      * @path /users/{userId}/categories/{categoryId}
-     * @allow (create) User with UID 'user_abc' can create a category at /users/user_abc/categories/category123.
-     * @deny (create) User with UID 'user_xyz' cannot create a category at /users/user_abc/categories/category123.
-     * @allow (get) User with UID 'user_abc' can read their category at /users/user_abc/categories/category123.
-     * @deny (get) User with UID 'user_xyz' cannot read the category at /users/user_abc/categories/category123.
-     * @allow (update) User with UID 'user_abc' can update their category at /users/user_abc/categories/category123.
-     * @deny (update) User with UID 'user_xyz' cannot update the category at /users/user_abc/categories/category123.
-     * @allow (delete) User with UID 'user_abc' can delete their category at /users/user_abc/categories/category123.
-     * @deny (delete) User with UID 'user_xyz' cannot delete the category at /users/user_abc/categories/category123.
+     * @allow (create) - User with UID 'user123' can create a category.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read/list/update/delete their own categories.
+     * @deny (create) - User with UID 'user456' cannot create a category for user 'user123'.
+     * @deny (get, list, update, delete) - User with UID 'user456' cannot access categories of user 'user123'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/categories/{categoryId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access control for budgets.
+     * @description Secure budget information for a specific user.
      * @path /users/{userId}/budgets/{budgetId}
-     * @allow (create) User with UID 'user_abc' can create a budget at /users/user_abc/budgets/budget123.
-     * @deny (create) User with UID 'user_xyz' cannot create a budget at /users/user_abc/budgets/budget123.
-     * @allow (get) User with UID 'user_abc' can read their budget at /users/user_abc/budgets/budget123.
-     * @deny (get) User with UID 'user_xyz' cannot read the budget at /users/user_abc/budgets/budget123.
-     * @allow (update) User with UID 'user_abc' can update their budget at /users/user_abc/budgets/budget123.
-     * @deny (update) User with UID 'user_xyz' cannot update the budget at /users/user_abc/budgets/budget123.
-     * @allow (delete) User with UID 'user_abc' can delete their budget at /users/user_abc/budgets/budget123.
-     * @deny (delete) User with UID 'user_xyz' cannot delete the budget at /users/user_abc/budgets/budget123.
+     * @allow (create) - User with UID 'user123' can create a budget.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read/list/update/delete their own budgets.
+     * @deny (create) - User with UID 'user456' cannot create a budget for user 'user123'.
+     * @deny (get, list, update, delete) - User with UID 'user456' cannot access budgets of user 'user123'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/budgets/{budgetId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access control for wishlist items.
+     * @description Secure wishlist items for a specific user.
      * @path /users/{userId}/wishlist/{wishlistId}
-     * @allow (create) User with UID 'user_abc' can create a wishlist item at /users/user_abc/wishlist/wishlist123.
-     * @deny (create) User with UID 'user_xyz' cannot create a wishlist item at /users/user_abc/wishlist/wishlist123.
-     * @allow (get) User with UID 'user_abc' can read their wishlist item at /users/user_abc/wishlist/wishlist123.
-     * @deny (get) User with UID 'user_xyz' cannot read the wishlist item at /users/user_abc/wishlist/wishlist123.
-     * @allow (update) User with UID 'user_abc' can update their wishlist item at /users/user_abc/wishlist/wishlist123.
-     * @deny (update) User with UID 'user_xyz' cannot update the wishlist item at /users/user_abc/wishlist/wishlist123.
-     * @allow (delete) User with UID 'user_abc' can delete their wishlist item at /users/user_abc/wishlist/wishlist123.
-     * @deny (delete) User with UID 'user_xyz' cannot delete the wishlist item at /users/user_abc/wishlist/wishlist123.
+     * @allow (create) - User with UID 'user123' can create a wishlist item.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read/list/update/delete their own wishlist items.
+     * @deny (create) - User with UID 'user456' cannot create a wishlist item for user 'user123'.
+     * @deny (get, list, update, delete) - User with UID 'user456' cannot access wishlist items of user 'user123'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/wishlist/{wishlistId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access control for IOUs.
+     * @description Secure IOUs for a specific user.
      * @path /users/{userId}/ious/{iouId}
-     * @allow (create) User with UID 'user_abc' can create an IOU at /users/user_abc/ious/iou123.
-     * @deny (create) User with UID 'user_xyz' cannot create an IOU at /users/user_abc/ious/iou123.
-     * @allow (get) User with UID 'user_abc' can read their IOU at /users/user_abc/ious/iou123.
-     * @deny (get) User with UID 'user_xyz' cannot read the IOU at /users/user_abc/ious/iou123.
-     * @allow (update) User with UID 'user_abc' can update their IOU at /users/user_abc/ious/iou123.
-     * @deny (update) User with UID 'user_xyz' cannot update the IOU at /users/user_abc/ious/iou123.
-     * @allow (delete) User with UID 'user_abc' can delete their IOU at /users/user_abc/ious/iou123.
-     * @deny (delete) User with UID 'user_xyz' cannot delete the IOU at /users/user_abc/ious/iou123.
+     * @allow (create) - User with UID 'user123' can create an IOU.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read/list/update/delete their own IOUs.
+     * @deny (create) - User with UID 'user456' cannot create an IOU for user 'user123'.
+     * @deny (get, list, update, delete) - User with UID 'user456' cannot access IOUs of user 'user123'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/ious/{iouId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access control for income.
+     * @description Secure income data for a specific user.
      * @path /users/{userId}/income/{incomeId}
-     * @allow (create) User with UID 'user_abc' can create an income entry at /users/user_abc/income/income123.
-     * @deny (create) User with UID 'user_xyz' cannot create an income entry at /users/user_abc/income/income123.
-     * @allow (get) User with UID 'user_abc' can read their income entry at /users/user_abc/income/income123.
-     * @deny (get) User with UID 'user_xyz' cannot read the income entry at /users/user_abc/income/income123.
-     * @allow (update) User with UID 'user_abc' can update their income entry at /users/user_abc/income/income123.
-     * @deny (update) User with UID 'user_xyz' cannot update the income entry at /users/user_abc/income/income123.
-     * @allow (delete) User with UID 'user_abc' can delete their income entry at /users/user_abc/income/income123.
-     * @deny (delete) User with UID 'user_xyz' cannot delete the income entry at /users/user_abc/income/income123.
+     * @allow (create) - User with UID 'user123' can create an income entry.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read/list/update/delete their own income entries.
+     * @deny (create) - User with UID 'user456' cannot create an income entry for user 'user123'.
+     * @deny (get, list, update, delete) - User with UID 'user456' cannot access income entries of user 'user123'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/income/{incomeId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access control for E-Wallets.
+     * @description Secure E-Wallet information for a specific user.
      * @path /users/{userId}/wallets/{walletId}
-     * @allow (create) User with UID 'user_abc' can create a wallet at /users/user_abc/wallets/wallet123.
-     * @deny (create) User with UID 'user_xyz' cannot create a wallet at /users/user_abc/wallets/wallet123.
-     * @allow (get) User with UID 'user_abc' can read their wallet at /users/user_abc/wallets/wallet123.
-     * @deny (get) User with UID 'user_xyz' cannot read the wallet at /users/user_abc/wallets/wallet123.
-     * @allow (update) User with UID 'user_abc' can update their wallet at /users/user_abc/wallets/wallet123.
-     * @deny (update) User with UID 'user_xyz' cannot update the wallet at /users/user_abc/wallets/wallet123.
-     * @allow (delete) User with UID 'user_abc' can delete their wallet at /users/user_abc/wallets/wallet123.
-     * @deny (delete) User with UID 'user_xyz' cannot delete the wallet at /users/user_abc/wallets/wallet123.
+     * @allow (create) - User with UID 'user123' can create an E-Wallet.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read/list/update/delete their own E-Wallets.
+     * @deny (create) - User with UID 'user456' cannot create an E-Wallet for user 'user123'.
+     * @deny (get, list, update, delete) - User with UID 'user456' cannot access E-Wallets of user 'user123'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/wallets/{walletId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Enforces user-specific access control for achievements.
+     * @description Secure achievements unlocked by a specific user.
      * @path /users/{userId}/achievements/{achievementId}
-     * @allow (create) User with UID 'user_abc' can create an achievement at /users/user_abc/achievements/achievement123.
-     * @deny (create) User with UID 'user_xyz' cannot create an achievement at /users/user_abc/achievements/achievement123.
-     * @allow (get) User with UID 'user_abc' can read their achievement at /users/user_abc/achievements/achievement123.
-     * @deny (get) User with UID 'user_xyz' cannot read the achievement at /users/user_abc/achievements/achievement123.
-     * @allow (update) User with UID 'user_abc' can update their achievement at /users/user_abc/achievements/achievement123.
-     * @deny (update) User with UID 'user_xyz' cannot update the achievement at /users/user_abc/achievements/achievement123.
-     * @allow (delete) User with UID 'user_abc' can delete their achievement at /users/user_abc/achievements/achievement123.
-     * @deny (delete) User with UID 'user_xyz' cannot delete the achievement at /users/user_abc/achievements/achievement123.
+     * @allow (create) - User with UID 'user123' can create an achievement.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read/list/update/delete their own achievements.
+     * @deny (create) - User with UID 'user456' cannot create an achievement for user 'user123'.
+     * @deny (get, list, update, delete) - User with UID 'user456' cannot access achievements of user 'user123'.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/achievements/{achievementId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Helper function to determine if the current user is the owner of the resource.
-     * @param {string} userId The user ID from the path.
-     * @return {boolean} True if the user is signed in and their UID matches the provided userId.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Helper function to determine if the user is signed in.
-     * @return {boolean} True if the user is signed in.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Helper function to determine if the current user is the owner of an EXISTING resource.
-     * @param {string} userId The user ID from the path.
-     * @return {boolean} True if the user is signed in, their UID matches the provided userId, and the resource exists.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
   }
 }
