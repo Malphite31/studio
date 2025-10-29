@@ -493,7 +493,7 @@ export default function DashboardPage() {
     return <Login />;
   }
   
-  if (window.matchMedia('print').matches && reportData) {
+  if (typeof window !== 'undefined' && window.matchMedia('print').matches && reportData) {
     return (
       <>
         {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} wallets={allWallets} />}

@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
 import { ArrowLeft, User, Download, FileSpreadsheet, Share2 } from 'lucide-react';
-import type { UserProfile, ReportData, BudgetGoal, Expense, Income, Iou, WishlistItem, Achievement } from '@/lib/types';
+import type { UserProfile, ReportData, BudgetGoal, Expense, Income, Iou, WishlistItem, Achievement, EWallet } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
@@ -551,7 +551,7 @@ export default function ProfilePage() {
 
   if (isProfileLoading) return <div>Loading profile...</div>
 
-  if (window.matchMedia('print').matches && reportData) {
+  if (typeof window !== 'undefined' && window.matchMedia('print').matches && reportData) {
     return (
       <>
         {reportData && userProfile && <TransactionReport reportData={reportData} user={userProfile} wallets={allWallets} />}
