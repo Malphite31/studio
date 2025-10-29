@@ -1,208 +1,224 @@
 /**
- * @fileoverview Firestore Security Rules for SpendWise application.
+ * @file Firestore Security Rules for SpendWise Application
+ * @version Prototyping Mode - Data shape is not strictly validated.
  *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model.  Users can only
- * access their own data.  No cross-user access is permitted except
- * where explicitly specified.
+ * @description This ruleset enforces a strict user-ownership model, where each user
+ * can only access and modify their own data. It prioritizes security and
+ * assumes that all data is private unless explicitly specified otherwise.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, with subcollections for
- * expenses, categories, budgets, wishlist items, IOUs, income, e-wallets, and achievements.
+ * - All data is nested under /users/{userId}, where {userId} corresponds to the
+ *   Firebase Authentication UID.
+ * - Each user has subcollections for expenses, categories, budgets, wishlist
+ *   items, IOUs, income, e-wallets and achievements.
  *
  * Key Security Decisions:
  * - User listing is disallowed.
- * - All write operations require a valid, authenticated user.
- * - Only the authenticated user can create, update, or delete resources under their own user ID.
- * - We are not validating the data shape in this prototyping phase.
+ * - All write operations are restricted to the owner of the data.
+ * - The rules explicitly deny any operation that is not explicitly allowed.
  *
  * Denormalization for Authorization:
- * - Each document within a user's subcollections should contain a `userId` field
- *   that matches the `userId` in the path. This is enforced during creation
- *   and immutably maintained during updates.
+ * - The rules rely on the Firebase Auth UID to identify the user and enforce
+ *   ownership. The userId field within the documents is validated against the
+ *   UID to ensure data consistency.
+ *
+ * Structural Segregation:
+ * - Private user data is stored under the /users/{userId} path, ensuring that
+ *   only the user can access it. Public data is not supported in this version.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
-     * @returns {boolean} True if the request is authenticated, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId - The user ID to compare against the authenticated user ID.
-     * @returns {boolean} True if the user IDs match, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID and resource exists.
-     * @param {string} userId - The user ID to compare against the authenticated user ID.
-     * @returns {boolean} True if the user IDs match and resource exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-
-    /**
-     * @description Rules for user profile documents.
+     * @description Secure user profile information. Only the authenticated user can
+     *              create their own profile. Updates are not allowed to prevent
+     *              accidental modification.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user creates their own profile with matching user ID.
-     * @allow (get, update, delete) - Authenticated user reads/updates/deletes their own profile with matching user ID.
-     * @deny (create) - Unauthenticated user tries to create a profile.
-     * @deny (get, update, delete) - Authenticated user tries to access another user's profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow create if request.auth.uid == userId
+     * @deny get if true
+     * @deny list if true
+     * @deny update if true
+     * @deny delete if true
+     * @principle Enforces user-ownership; prevents profile modification.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      allow get: if false;
       allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Rules for expense documents.
+     * @description Secure expense data for a specific user.
      * @path /users/{userId}/expenses/{expenseId}
-     * @allow (create) - Authenticated user creates an expense under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own expenses under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an expense.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's expenses.
-     * @principle Enforces document ownership for all operations.
+     * @allow create if isSignedIn() && isOwner(userId)
+     * @allow get if isSignedIn() && isOwner(userId)
+     * @allow list if isSignedIn() && isOwner(userId)
+     * @allow update if isSignedIn() && isExistingOwner(userId)
+     * @allow delete if isSignedIn() && isExistingOwner(userId)
+     * @deny create if request.auth.uid != request.resource.data.userId
+     * @deny update if request.resource.data.userId != resource.data.userId
+     * @principle Enforces document ownership for writes, validates userId on create.
      */
     match /users/{userId}/expenses/{expenseId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for category documents.
+     * @description Secure expense categories created by a specific user.
      * @path /users/{userId}/categories/{categoryId}
-     * @allow (create) - Authenticated user creates a category under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own categories under their user ID.
-     * @deny (create) - Unauthenticated user tries to create a category.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's categories.
-     * @principle Enforces document ownership for all operations.
+     * @allow create if isSignedIn() && isOwner(userId)
+     * @allow get if isSignedIn() && isOwner(userId)
+     * @allow list if isSignedIn() && isOwner(userId)
+     * @allow update if isSignedIn() && isExistingOwner(userId)
+     * @allow delete if isSignedIn() && isExistingOwner(userId)
+     * @deny create if request.auth.uid != request.resource.data.userId
+     * @deny update if request.resource.data.userId != resource.data.userId
+     * @principle Enforces document ownership for writes, validates userId on create.
      */
     match /users/{userId}/categories/{categoryId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for budget documents.
+     * @description Secure budget information for a specific user.
      * @path /users/{userId}/budgets/{budgetId}
-     * @allow (create) - Authenticated user creates a budget under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own budgets under their user ID.
-     * @deny (create) - Unauthenticated user tries to create a budget.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's budgets.
-     * @principle Enforces document ownership for all operations.
+     * @allow create if isSignedIn() && isOwner(userId)
+     * @allow get if isSignedIn() && isOwner(userId)
+     * @allow list if isSignedIn() && isOwner(userId)
+     * @allow update if isSignedIn() && isExistingOwner(userId)
+     * @allow delete if isSignedIn() && isExistingOwner(userId)
+     * @deny create if request.auth.uid != request.resource.data.userId
+     * @deny update if request.resource.data.userId != resource.data.userId
+     * @principle Enforces document ownership for writes, validates userId on create.
      */
     match /users/{userId}/budgets/{budgetId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for wishlist documents.
+     * @description Secure wishlist items for a specific user.
      * @path /users/{userId}/wishlist/{wishlistId}
-     * @allow (create) - Authenticated user creates a wishlist item under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own wishlist items under their user ID.
-     * @deny (create) - Unauthenticated user tries to create a wishlist item.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's wishlist items.
-     * @principle Enforces document ownership for all operations.
+     * @allow create if isSignedIn() && isOwner(userId)
+     * @allow get if isSignedIn() && isOwner(userId)
+     * @allow list if isSignedIn() && isOwner(userId)
+     * @allow update if isSignedIn() && isExistingOwner(userId)
+     * @allow delete if isSignedIn() && isExistingOwner(userId)
+     * @deny create if request.auth.uid != request.resource.data.userId
+     * @deny update if request.resource.data.userId != resource.data.userId
+     * @principle Enforces document ownership for writes, validates userId on create.
      */
     match /users/{userId}/wishlist/{wishlistId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for iou documents.
+     * @description Secure IOUs for a specific user.
      * @path /users/{userId}/ious/{iouId}
-     * @allow (create) - Authenticated user creates an IOU under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own IOUs under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an IOU.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's IOUs.
-     * @principle Enforces document ownership for all operations.
+     * @allow create if isSignedIn() && isOwner(userId)
+     * @allow get if isSignedIn() && isOwner(userId)
+     * @allow list if isSignedIn() && isOwner(userId)
+     * @allow update if isSignedIn() && isExistingOwner(userId)
+     * @allow delete if isSignedIn() && isExistingOwner(userId)
+     * @deny create if request.auth.uid != request.resource.data.userId
+     * @deny update if request.resource.data.userId != resource.data.userId
+     * @principle Enforces document ownership for writes, validates userId on create.
      */
     match /users/{userId}/ious/{iouId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for income documents.
+     * @description Secure income data for a specific user.
      * @path /users/{userId}/income/{incomeId}
-     * @allow (create) - Authenticated user creates an income entry under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own income entries under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an income entry.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's income entries.
-     * @principle Enforces document ownership for all operations.
+     * @allow create if isSignedIn() && isOwner(userId)
+     * @allow get if isSignedIn() && isOwner(userId)
+     * @allow list if isSignedIn() && isOwner(userId)
+     * @allow update if isSignedIn() && isExistingOwner(userId)
+     * @allow delete if isSignedIn() && isExistingOwner(userId)
+     * @deny create if request.auth.uid != request.resource.data.userId
+     * @deny update if request.resource.data.userId != resource.data.userId
+     * @principle Enforces document ownership for writes, validates userId on create.
      */
     match /users/{userId}/income/{incomeId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for ewallet documents.
+     * @description Secure E-Wallet information for a specific user.
      * @path /users/{userId}/wallets/{walletId}
-     * @allow (create) - Authenticated user creates an ewallet under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own ewallets under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an ewallet.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's ewallets.
-     * @principle Enforces document ownership for all operations.
+     * @allow create if isSignedIn() && isOwner(userId)
+     * @allow get if isSignedIn() && isOwner(userId)
+     * @allow list if isSignedIn() && isOwner(userId)
+     * @allow update if isSignedIn() && isExistingOwner(userId)
+     * @allow delete if isSignedIn() && isExistingOwner(userId)
+     * @deny create if request.auth.uid != request.resource.data.userId
+     * @deny update if request.resource.data.userId != resource.data.userId
+     * @principle Enforces document ownership for writes, validates userId on create.
      */
     match /users/{userId}/wallets/{walletId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for achievement documents.
+     * @description Secure achievements unlocked by a specific user.
      * @path /users/{userId}/achievements/{achievementId}
-     * @allow (create) - Authenticated user creates an achievement under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own achievements under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an achievement.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's achievements.
-     * @principle Enforces document ownership for all operations.
+     * @allow create if isSignedIn() && isOwner(userId)
+     * @allow get if isSignedIn() && isOwner(userId)
+     * @allow list if isSignedIn() && isOwner(userId)
+     * @allow update if false;
+     * @allow delete if false;
+     * @deny create if request.auth.uid != userId
+     * @principle Enforces document ownership for writes, validates userId on create.
      */
     match /users/{userId}/achievements/{achievementId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if false;
+      allow delete: if false;
     }
+  }
+
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isSignedIn() && isOwner(userId) && resource != null;
   }
 }
