@@ -300,6 +300,32 @@
         "balance",
         "userId"
       ]
+    },
+    "Achievement": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Achievement",
+      "type": "object",
+      "description": "Represents an achievement unlocked by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the achievement (e.g., 'first-expense')."
+        },
+        "unlockedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the achievement was unlocked."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who unlocked this achievement."
+        }
+      },
+      "required": [
+        "id",
+        "unlockedAt",
+        "userId"
+      ]
     }
   },
   "auth": {
@@ -340,6 +366,10 @@
     "/users/{userId}/wallets/{walletId}": {
       "schema": "EWallet",
       "description": "Stores E-Wallet information for a specific user."
+    },
+    "/users/{userId}/achievements/{achievementId}": {
+      "schema": "Achievement",
+      "description": "Stores achievements unlocked by a specific user."
     }
   },
   "storage": {}

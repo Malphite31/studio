@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useUser, useAuth, useFirestore, useMemoFirebase } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, serverTimestamp, collection, getDocs, writeBatch } from 'firebase/firestore';
@@ -17,8 +17,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
-import { ArrowLeft, User, Download, FileSpreadsheet } from 'lucide-react';
-import type { UserProfile, ReportData, BudgetGoal, Expense, Income, Iou, WishlistItem } from '@/lib/types';
+import { ArrowLeft, User, Download, FileSpreadsheet, Share2 } from 'lucide-react';
+import type { UserProfile, ReportData, BudgetGoal, Expense, Income, Iou, WishlistItem, Achievement } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
@@ -28,6 +28,12 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { TransactionReportDialog } from '@/components/transaction-report-dialog';
 import TransactionReport from '@/components/transaction-report';
 import { Timestamp } from 'firebase/firestore';
+import { ALL_ACHIEVEMENTS, type AchievementData } from '@/lib/achievements';
+import { checkAndUnlockAchievements } from '@/services/check-achievements';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { generateAchievementImage } from '@/ai/flows/generate-achievement-image-flow';
+import { AchievementImageDialog } from '@/components/achievement-image-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const profileSchema = z.object({
@@ -45,21 +51,51 @@ export default function ProfilePage() {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
 
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImageData, setGeneratedImageData] = useState<{imageUrl: string; achievementTitle: string} | null>(null);
+  const [isImageDialogOpened, setIsImageDialogOpened] = useState(false);
+
+
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const expensesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'expenses') : null, [user, firestore]);
-  const { data: expenses } = useCollection(expensesQuery);
+  const { data: expenses } = useCollection<Expense>(expensesQuery);
   const incomeQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'income') : null, [user, firestore]);
-  const { data: income } = useCollection(incomeQuery);
+  const { data: income } = useCollection<Income>(incomeQuery);
   const iousQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'ious') : null, [user, firestore]);
-  const { data: ious } = useCollection(iousQuery);
+  const { data: ious } = useCollection<Iou>(iousQuery);
   const wishlistQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'wishlist') : null, [user, firestore]);
-  const { data: wishlistItems } = useCollection(wishlistQuery);
+  const { data: wishlistItems } = useCollection<WishlistItem>(wishlistQuery);
   const walletsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'wallets') : null, [user, firestore]);
-  const { data: wallets } = useCollection(walletsQuery);
+  const { data: wallets } = useCollection<EWallet>(walletsQuery);
   const budgetGoalsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'budgets') : null, [user, firestore]);
   const { data: budgetGoalsData } = useCollection<BudgetGoal>(budgetGoalsQuery);
+  const achievementsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'achievements') : null, [user, firestore]);
+  const { data: unlockedAchievements } = useCollection<Achievement>(achievementsQuery);
+
+  const allDataLoaded = useMemo(() => {
+    return !!(expenses && income && ious && wishlistItems && wallets && budgetGoalsData && unlockedAchievements);
+  }, [expenses, income, ious, wishlistItems, wallets, budgetGoalsData, unlockedAchievements]);
+
+
+  useEffect(() => {
+    if (user && allDataLoaded) {
+      checkAndUnlockAchievements(
+        user.uid,
+        { expenses, income, ious, wishlistItems, wallets, unlockedAchievements, budgetGoals: budgetGoalsData },
+        (newlyUnlocked) => {
+          if (newlyUnlocked.length > 0) {
+            toast({
+              title: "Achievement Unlocked!",
+              description: `You've earned: ${newlyUnlocked.map(a => a.title).join(', ')}`,
+            });
+          }
+        }
+      );
+    }
+  }, [user, allDataLoaded, expenses, income, ious, wishlistItems, wallets, budgetGoalsData, unlockedAchievements, toast]);
+  
 
   const budgetGoals: BudgetGoal[] = useMemo(() => {
     return budgetGoalsData?.map(goal => ({
@@ -76,6 +112,21 @@ export default function ProfilePage() {
   const [isImportConfirmOpen, setImportConfirmOpen] = useState(false);
   const [isResetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [fileToImport, setFileToImport] = useState<File | null>(null);
+
+  const combinedAchievements = useMemo(() => {
+    return ALL_ACHIEVEMENTS.map(achievement => {
+      const unlocked = unlockedAchievements?.find(ua => ua.id === achievement.id);
+      return {
+        ...achievement,
+        unlocked: !!unlocked,
+        unlockedAt: unlocked?.unlockedAt,
+      };
+    }).sort((a, b) => {
+        if (a.unlocked && !b.unlocked) return -1;
+        if (!a.unlocked && b.unlocked) return 1;
+        return 0;
+    })
+  }, [unlockedAchievements]);
 
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -134,7 +185,7 @@ export default function ProfilePage() {
     toast({ title: 'Exporting...', description: 'Gathering your data. The download will begin shortly.' });
 
     try {
-        const collectionsToExport = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
+        const collectionsToExport = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets', 'achievements'];
         const exportData: Record<string, any[]> = {};
 
         for (const collectionName of collectionsToExport) {
@@ -187,7 +238,7 @@ export default function ProfilePage() {
             const data = JSON.parse(e.target?.result as string);
             const batch = writeBatch(firestore);
             
-            const collectionsToManage = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
+            const collectionsToManage = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets', 'achievements'];
 
             // First, delete all existing data in a separate batch or before import
             for (const collectionName of collectionsToManage) {
@@ -228,7 +279,7 @@ export default function ProfilePage() {
 
     try {
         const batch = writeBatch(firestore);
-        const collectionsToReset = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
+        const collectionsToReset = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets', 'achievements'];
 
         for (const collectionName of collectionsToReset) {
             const collectionRef = collection(firestore, 'users', user.uid, collectionName);
@@ -254,7 +305,7 @@ export default function ProfilePage() {
         const startOfThisMonth = startOfMonth(now);
 
         // Clear existing data first
-        const collectionsToReset = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets'];
+        const collectionsToReset = ['expenses', 'income', 'budgets', 'ious', 'wishlist', 'wallets', 'achievements'];
         for (const collectionName of collectionsToReset) {
             const collectionRef = collection(firestore, 'users', userId, collectionName);
             const snapshot = await getDocs(collectionRef);
@@ -469,6 +520,34 @@ export default function ProfilePage() {
         toast({ title: 'Export Complete!', description: 'Your CSV file has been downloaded.' });
     };
 
+    const handleShareAchievement = async (achievement: AchievementData) => {
+        if (!userProfile) return;
+
+        setIsGeneratingImage(true);
+        try {
+            const result = await generateAchievementImage({
+                achievementTitle: achievement.title,
+                achievementDescription: achievement.description,
+                userName: userProfile.name || userProfile.username,
+                iconName: achievement.icon.displayName || 'Award'
+            });
+            setGeneratedImageData({
+                imageUrl: result.imageUrl,
+                achievementTitle: achievement.title
+            });
+            setIsImageDialogOpened(true);
+        } catch (error) {
+            console.error("Failed to generate achievement image", error);
+            toast({
+                variant: "destructive",
+                title: "Image Generation Failed",
+                description: "Could not create the achievement image. Please try again later."
+            });
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    };
+
 
   if (isProfileLoading) return <div>Loading profile...</div>
 
@@ -574,6 +653,73 @@ export default function ProfilePage() {
 
             <Card>
                 <CardHeader>
+                    <CardTitle>Achievements</CardTitle>
+                    <CardDescription>Your financial milestones and accomplishments.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {!allDataLoaded ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 w-full" />)}
+                        </div>
+                    ) : (
+                        <TooltipProvider>
+                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {combinedAchievements.map(ach => {
+                                    const Icon = ach.icon;
+                                    return (
+                                        <Tooltip key={ach.id}>
+                                            <TooltipTrigger asChild>
+                                                <div
+                                                    className={cn(
+                                                        "relative aspect-square flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-center transition-all",
+                                                        ach.unlocked ? "bg-card shadow-md" : "bg-muted/50"
+                                                    )}
+                                                >
+                                                    <Icon
+                                                        className={cn(
+                                                            "h-10 w-10",
+                                                            ach.unlocked ? "text-primary" : "text-muted-foreground"
+                                                        )}
+                                                    />
+                                                    <p className={cn(
+                                                        "text-xs font-semibold",
+                                                        !ach.unlocked && "text-muted-foreground"
+                                                    )}>
+                                                        {ach.title}
+                                                    </p>
+                                                    {ach.unlocked && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="absolute top-1 right-1 h-7 w-7"
+                                                            onClick={() => handleShareAchievement(ach)}
+                                                            disabled={isGeneratingImage}
+                                                        >
+                                                            <Share2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p className="font-bold">{ach.title}</p>
+                                                <p className="text-sm text-muted-foreground">{ach.description}</p>
+                                                {ach.unlockedAt && (
+                                                    <p className="text-xs text-primary pt-1">
+                                                        Unlocked on {format(toDate(ach.unlockedAt), 'MMM d, yyyy')}
+                                                    </p>
+                                                )}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    );
+                                })}
+                            </div>
+                        </TooltipProvider>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
                     <CardTitle>Data Management</CardTitle>
                     <CardDescription>Export, import, or reset your financial data.</CardDescription>
                 </CardHeader>
@@ -603,6 +749,12 @@ export default function ProfilePage() {
 
         </div>
       </div>
+       <AchievementImageDialog
+        open={isImageDialogOpened}
+        onOpenChange={setIsImageDialogOpened}
+        imageData={generatedImageData}
+        isGenerating={isGeneratingImage}
+      />
 
       <TransactionReportDialog
         open={isReportDialogOpen}

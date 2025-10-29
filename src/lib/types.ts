@@ -77,6 +77,7 @@ export interface ExportData {
   ious: Iou[];
   wishlist: WishlistItem[];
   wallets: EWallet[];
+  achievements: Achievement[];
 }
 
 export interface ReportData {
@@ -94,4 +95,20 @@ export interface ReportData {
     endDate: Date;
   };
   printAll: boolean;
+}
+
+export interface Achievement {
+  id: string;
+  unlockedAt: Date | Timestamp;
+  userId: string;
+}
+
+export interface UserDataAggregate {
+  expenses: Expense[];
+  income: Income[];
+  ious: Iou[];
+  wishlistItems: WishlistItem[];
+  wallets: EWallet[];
+  unlockedAchievements: Achievement[];
+  budgetGoals: BudgetGoal[];
 }
