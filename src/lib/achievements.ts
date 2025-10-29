@@ -108,6 +108,6 @@ export const ALL_ACHIEVEMENTS: AchievementData[] = [
     title: 'Wallet Wizard',
     description: 'Add your first E-Wallet.',
     icon: Wallet,
-    check: (data) => (data.wallets?.length ?? 0) > 0, // Exclude cash-on-hand
+    check: (data) => (data.wallets?.filter(w => w.id !== 'cash').length ?? 0) > 0,
   },
 ];

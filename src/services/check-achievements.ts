@@ -2,7 +2,7 @@
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { ALL_ACHIEVEMENTS, type AchievementData } from '@/lib/achievements';
 import type { UserDataAggregate, Achievement } from '@/lib/types';
-import { getSdks, errorEmitter, FirestorePermissionError } from '@/firebase/index';
+import { initializeFirebase, errorEmitter, FirestorePermissionError } from '@/firebase/index';
 
 /**
  * Checks for and unlocks new achievements for a user.
@@ -15,7 +15,7 @@ export const checkAndUnlockAchievements = async (
   data: UserDataAggregate,
   onNewAchievementsUnlocked?: (unlocked: AchievementData[]) => void
 ) => {
-  const { firestore } = getSdks(undefined as any);
+  const { firestore } = initializeFirebase();
   if (!data.unlockedAchievements) return;
 
   const unlockedIds = new Set(data.unlockedAchievements.map(a => a.id));
