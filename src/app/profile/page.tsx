@@ -587,9 +587,9 @@ export default function ProfilePage() {
             startY,
             head: [['Summary', 'Amount']],
             body: [
-                ['Total Income', `₱${totalIncome.toFixed(2)}`],
-                ['Total Expenses', `₱${totalExpenses.toFixed(2)}`],
-                ['Net Balance', `₱${netBalance.toFixed(2)}`],
+                ['Total Income', formatCurrency(totalIncome)],
+                ['Total Expenses', formatCurrency(totalExpenses)],
+                ['Net Balance', formatCurrency(netBalance)],
             ],
             theme: 'striped',
             headStyles: { fillColor: [79, 129, 189] },
@@ -607,7 +607,7 @@ export default function ProfilePage() {
                     formatDate(i.date),
                     i.name,
                     allWallets.find(w => w.id === i.walletId)?.name || 'N/A',
-                    `+ ₱${i.amount.toFixed(2)}`
+                    `+ ${formatCurrency(i.amount)}`
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [79, 129, 189] },
@@ -625,7 +625,7 @@ export default function ProfilePage() {
                     e.name,
                     e.category,
                     e.paymentMethod || 'N/A',
-                    `- ₱${e.amount.toFixed(2)}`
+                    `- ${formatCurrency(e.amount)}`
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [79, 129, 189] },
