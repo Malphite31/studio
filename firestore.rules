@@ -2,202 +2,238 @@
  * @fileoverview Firestore Security Rules for SpendWise application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. Users can only
- * read and write their own data.  No listing of user documents is allowed.
+ * This ruleset enforces a strict user-ownership model.  Each user has full
+ * control over their own data, and no access to other users' data.  Listing
+ * of user documents is disallowed for privacy.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, where {userId} matches the
- * Firebase Auth UID.  This structure ensures clear ownership.
+ * All data is nested under /users/{userId}, which matches the Firebase Auth UID.
+ * Subcollections under the user document store specific data types (expenses,
+ * categories, budgets, etc.).
  *
  * Key Security Decisions:
- * - User listing is explicitly denied to protect user privacy.
- * - All data is private by default; explicit rules are required to allow access.
- * - The rules prioritize security and will default to the most restrictive
- *   interpretation when ambiguities arise.
+ * - User profiles can only be created by the user themselves (self-creation).
+ * - Listing of user documents is denied to prevent enumeration.
+ * - All subcollections enforce owner-only access for create, read, update, and
+ *   delete operations.
  *
  * Denormalization for Authorization:
- * The rules assume that all documents requiring user-level authorization contain
- * a `userId` field that matches the Firebase Auth UID. This avoids costly `get()`
- * calls and ensures efficient rule evaluation.
+ * To avoid costly `get()` calls in the rules, each document in a user's
+ * subcollections includes a `userId` field that must match the UID in the path.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Protects the root of the database, preventing any unauthorized access.
+     * @description Protects against unauthorized access.
      * @path /
-     * @allow (get, list, create, update, delete) N/A - This is the root and should not be generally accessed.
-     * @deny (get, list, create, update, delete) Always, as it's the root.
-     * @principle Prevents accidental access to the database root.
+     * @allow (get, list) if false
+     * @deny (create, update, delete) if false
+     * @principle Prevents anyone from accessing the root collection.
      */
     match /{document=**} {
       allow read, write: if false;
     }
 
     /**
-     * @description Controls access to user profile documents. Only the authenticated user can read and write their own profile.
+     * @description Allows a user to create their own profile. Prevents listing all user profiles.
      * @path /users/{userId}
-     * @allow (get) User with UID 'TF1h4elgYKdCH2lxNLwCz7QNgzG3' can read their own profile document at /users/TF1h4elgYKdCH2lxNLwCz7QNgzG3.
-     * @allow (create) User with UID 'testUID' can create their own profile document at /users/testUID if the document's `id` field also equals 'testUID'.
-     * @allow (update,delete) User with UID 'testUID' can update/delete their own profile document at /users/testUID.
-     * @deny (get) User with UID 'otherUID' cannot read the profile document at /users/testUID.
-     * @deny (create) User with UID 'testUID' cannot create a profile document at /users/anotherUID.
-     * @deny (update, delete) User with UID 'otherUID' cannot update/delete the profile document at /users/testUID.
-     * @principle Enforces user-ownership for profile data.
+     * @allow (create) User with UID 'user123' can create a profile with id: 'user123'
+     * @deny (create) User with UID 'user123' cannot create a profile with id: 'user456'
+     * @allow (get, update, delete) User with UID 'user123' can read/update/delete their own profile (id: 'user123')
+     * @deny (get, update, delete) User with UID 'user123' cannot read/update/delete profile of user with ID 'user456'
+     * @deny (list) No one can list all user profiles.
+     * @principle Enforces self-creation and ownership of user profiles. Prevents listing.
      */
     match /users/{userId} {
-      allow get: if isSignedIn() && isOwner(userId);
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow get, update, delete: if isExistingOwner(userId);
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to expense documents for a specific user. Only the authenticated user can read, write, and manage their own expenses.
+     * @description Secures expenses subcollection to owner-only access.
      * @path /users/{userId}/expenses/{expenseId}
-     * @allow (get, list) User with UID 'testUID' can read their own expense documents in /users/testUID/expenses/{expenseId}.
-     * @allow (create) User with UID 'testUID' can create expense documents under their own user ID in /users/testUID/expenses.
-     * @allow (update, delete) User with UID 'testUID' can update and delete their own expense documents in /users/testUID/expenses/{expenseId}.
-     * @deny (get, list) User with UID 'otherUID' cannot read the expense documents in /users/testUID/expenses/{expenseId}.
-     * @deny (create) User with UID 'testUID' cannot create expense documents under another user's ID in /users/anotherUID/expenses.
-     * @deny (update, delete) User with UID 'otherUID' cannot update or delete expense documents in /users/testUID/expenses/{expenseId}.
-     * @principle Enforces user-ownership for expense data.
+     * @allow (create) User with UID 'user123' can create an expense under /users/user123/expenses
+     * @deny (create) User with UID 'user123' cannot create an expense under /users/user456/expenses
+     * @allow (get, list, update, delete) User with UID 'user123' can read/list/update/delete their own expenses under /users/user123/expenses
+     * @deny (get, list, update, delete) User with UID 'user123' cannot read/list/update/delete expenses under /users/user456/expenses
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/expenses/{expenseId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list, update, delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to category documents for a specific user. Only the authenticated user can read, write, and manage their own categories.
+     * @description Secures categories subcollection to owner-only access.
      * @path /users/{userId}/categories/{categoryId}
-     * @allow (get, list) User with UID 'testUID' can read their own category documents in /users/testUID/categories/{categoryId}.
-     * @allow (create) User with UID 'testUID' can create category documents under their own user ID in /users/testUID/categories.
-     * @allow (update, delete) User with UID 'testUID' can update and delete their own category documents in /users/testUID/categories/{categoryId}.
-     * @deny (get, list) User with UID 'otherUID' cannot read the category documents in /users/testUID/categories/{categoryId}.
-     * @deny (create) User with UID 'testUID' cannot create category documents under another user's ID in /users/anotherUID/categories.
-     * @deny (update, delete) User with UID 'otherUID' cannot update or delete category documents in /users/testUID/categories/{categoryId}.
-     * @principle Enforces user-ownership for category data.
+     * @allow (create) User with UID 'user123' can create a category under /users/user123/categories
+     * @deny (create) User with UID 'user123' cannot create a category under /users/user456/categories
+     * @allow (get, list, update, delete) User with UID 'user123' can read/list/update/delete their own categories under /users/user123/categories
+     * @deny (get, list, update, delete) User with UID 'user123' cannot read/list/update/delete categories under /users/user456/categories
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/categories/{categoryId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list, update, delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to budget documents for a specific user. Only the authenticated user can read, write, and manage their own budgets.
+     * @description Secures budgets subcollection to owner-only access.
      * @path /users/{userId}/budgets/{budgetId}
-     * @allow (get, list) User with UID 'testUID' can read their own budget documents in /users/testUID/budgets/{budgetId}.
-     * @allow (create) User with UID 'testUID' can create budget documents under their own user ID in /users/testUID/budgets.
-     * @allow (update, delete) User with UID 'testUID' can update and delete their own budget documents in /users/testUID/budgets/{budgetId}.
-     * @deny (get, list) User with UID 'otherUID' cannot read the budget documents in /users/testUID/budgets/{budgetId}.
-     * @deny (create) User with UID 'testUID' cannot create budget documents under another user's ID in /users/anotherUID/budgets.
-     * @deny (update, delete) User with UID 'otherUID' cannot update or delete budget documents in /users/testUID/budgets/{budgetId}.
-     * @principle Enforces user-ownership for budget data.
+     * @allow (create) User with UID 'user123' can create a budget under /users/user123/budgets
+     * @deny (create) User with UID 'user123' cannot create a budget under /users/user456/budgets
+     * @allow (get, list, update, delete) User with UID 'user123' can read/list/update/delete their own budgets under /users/user123/budgets
+     * @deny (get, list, update, delete) User with UID 'user123' cannot read/list/update/delete budgets under /users/user456/budgets
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/budgets/{budgetId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list, update, delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to wishlist item documents for a specific user. Only the authenticated user can read, write, and manage their own wishlist items.
+     * @description Secures wishlist subcollection to owner-only access.
      * @path /users/{userId}/wishlist/{wishlistId}
-     * @allow (get, list) User with UID 'testUID' can read their own wishlist item documents in /users/testUID/wishlist/{wishlistId}.
-     * @allow (create) User with UID 'testUID' can create wishlist item documents under their own user ID in /users/testUID/wishlist.
-     * @allow (update, delete) User with UID 'testUID' can update and delete their own wishlist item documents in /users/testUID/wishlist/{wishlistId}.
-     * @deny (get, list) User with UID 'otherUID' cannot read the wishlist item documents in /users/testUID/wishlist/{wishlistId}.
-     * @deny (create) User with UID 'testUID' cannot create wishlist item documents under another user's ID in /users/anotherUID/wishlist.
-     * @deny (update, delete) User with UID 'otherUID' cannot update or delete wishlist item documents in /users/testUID/wishlist/{wishlistId}.
-     * @principle Enforces user-ownership for wishlist item data.
+     * @allow (create) User with UID 'user123' can create a wishlist item under /users/user123/wishlist
+     * @deny (create) User with UID 'user123' cannot create a wishlist item under /users/user456/wishlist
+     * @allow (get, list, update, delete) User with UID 'user123' can read/list/update/delete their own wishlist items under /users/user123/wishlist
+     * @deny (get, list, update, delete) User with UID 'user123' cannot read/list/update/delete wishlist items under /users/user456/wishlist
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/wishlist/{wishlistId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list, update, delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to IOU documents for a specific user. Only the authenticated user can read, write, and manage their own IOUs.
+     * @description Secures ious subcollection to owner-only access.
      * @path /users/{userId}/ious/{iouId}
-     * @allow (get, list) User with UID 'testUID' can read their own IOU documents in /users/testUID/ious/{iouId}.
-     * @allow (create) User with UID 'testUID' can create IOU documents under their own user ID in /users/testUID/ious.
-     * @allow (update, delete) User with UID 'testUID' can update and delete their own IOU documents in /users/testUID/ious/{iouId}.
-     * @deny (get, list) User with UID 'otherUID' cannot read the IOU documents in /users/testUID/ious/{iouId}.
-     * @deny (create) User with UID 'testUID' cannot create IOU documents under another user's ID in /users/anotherUID/ious.
-     * @deny (update, delete) User with UID 'otherUID' cannot update or delete IOU documents in /users/testUID/ious/{iouId}.
-     * @principle Enforces user-ownership for IOU data.
+     * @allow (create) User with UID 'user123' can create an iou under /users/user123/ious
+     * @deny (create) User with UID 'user123' cannot create an iou under /users/user456/ious
+     * @allow (get, list, update, delete) User with UID 'user123' can read/list/update/delete their own ious under /users/user123/ious
+     * @deny (get, list, update, delete) User with UID 'user123' cannot read/list/update/delete ious under /users/user456/ious
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/ious/{iouId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list, update, delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to income documents for a specific user. Only the authenticated user can read, write, and manage their own income data.
+     * @description Secures income subcollection to owner-only access.
      * @path /users/{userId}/income/{incomeId}
-     * @allow (get, list) User with UID 'testUID' can read their own income documents in /users/testUID/income/{incomeId}.
-     * @allow (create) User with UID 'testUID' can create income documents under their own user ID in /users/testUID/income.
-     * @allow (update, delete) User with UID 'testUID' can update and delete their own income documents in /users/testUID/income/{incomeId}.
-     * @deny (get, list) User with UID 'otherUID' cannot read the income documents in /users/testUID/income/{incomeId}.
-     * @deny (create) User with UID 'testUID' cannot create income documents under another user's ID in /users/anotherUID/income.
-     * @deny (update, delete) User with UID 'otherUID' cannot update or delete income documents in /users/testUID/income/{incomeId}.
-     * @principle Enforces user-ownership for income data.
+     * @allow (create) User with UID 'user123' can create an income under /users/user123/income
+     * @deny (create) User with UID 'user123' cannot create an income under /users/user456/income
+     * @allow (get, list, update, delete) User with UID 'user123' can read/list/update/delete their own income entries under /users/user123/income
+     * @deny (get, list, update, delete) User with UID 'user123' cannot read/list/update/delete income entries under /users/user456/income
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/income/{incomeId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list, update, delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to E-Wallet documents for a specific user. Only the authenticated user can read, write, and manage their own E-Wallet information.
+     * @description Secures wallets subcollection to owner-only access.
      * @path /users/{userId}/wallets/{walletId}
-     * @allow (get, list) User with UID 'testUID' can read their own E-Wallet documents in /users/testUID/wallets/{walletId}.
-     * @allow (create) User with UID 'testUID' can create E-Wallet documents under their own user ID in /users/testUID/wallets.
-     * @allow (update, delete) User with UID 'testUID' can update and delete their own E-Wallet documents in /users/testUID/wallets/{walletId}.
-     * @deny (get, list) User with UID 'otherUID' cannot read the E-Wallet documents in /users/testUID/wallets/{walletId}.
-     * @deny (create) User with UID 'testUID' cannot create E-Wallet documents under another user's ID in /users/anotherUID/wallets.
-     * @deny (update, delete) User with UID 'otherUID' cannot update or delete E-Wallet documents in /users/testUID/wallets/{walletId}.
-     * @principle Enforces user-ownership for E-Wallet data.
+     * @allow (create) User with UID 'user123' can create a wallet under /users/user123/wallets
+     * @deny (create) User with UID 'user123' cannot create a wallet under /users/user456/wallets
+     * @allow (get, list, update, delete) User with UID 'user123' can read/list/update/delete their own wallets under /users/user123/wallets
+     * @deny (get, list, update, delete) User with UID 'user123' cannot read/list/update/delete wallets under /users/user456/wallets
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/wallets/{walletId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list, update, delete: if isExistingOwner(userId);
     }
 
-    // --- Helper functions ---
-    function isSignedIn() {
-      return request.auth != null;
-    }
+    /**
+     * @description Secures achievements subcollection to owner-only access.
+     * @path /users/{userId}/achievements/{achievementId}
+     * @allow (create) User with UID 'user123' can create an achievement under /users/user123/achievements
+     * @deny (create) User with UID 'user123' cannot create an achievement under /users/user456/achievements
+     * @allow (get, list, update, delete) User with UID 'user123' can read/list/update/delete their own achievements under /users/user123/achievements
+     * @deny (get, list, update, delete) User with UID 'user123' cannot read/list/update/delete achievements under /users/user456/achievements
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/achievements/{achievementId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
 
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
 
-    function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list, update, delete: if isExistingOwner(userId);
     }
   }
 }
