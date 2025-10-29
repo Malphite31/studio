@@ -18,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Link from 'next/link';
-import { ArrowLeft, User, Download, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, User, Download, FileSpreadsheet, Printer } from 'lucide-react';
 import type { UserProfile, ReportData, BudgetGoal, Expense, Income, Iou, WishlistItem, Achievement, EWallet } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -405,8 +405,8 @@ export default function ProfilePage() {
 
     const dateInterval = { start: startDate, end: endDate };
 
-    const filteredExpenses = printAll ? expenses || [] : expenses?.filter(e => isWithinInterval(toDate(e.date), dateInterval)) || [];
-    const filteredIncome = includeIncome ? (printAll ? income || [] : income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) || []) : [];
+    const filteredExpenses = printAll ? expenses || [] : expenses?.filter(e => isValid(toDate(e.date)) && isWithinInterval(toDate(e.date), dateInterval)) || [];
+    const filteredIncome = includeIncome ? (printAll ? income || [] : income?.filter(i => isValid(toDate(i.date)) && isWithinInterval(toDate(i.date), dateInterval)) || []) : [];
     const filteredWishlist = includeWishlist ? (printAll ? wishlistItems || [] : wishlistItems || []) : [];
     const filteredBudgets = includeBudget ? budgetGoals : [];
 
@@ -718,12 +718,16 @@ export default function ProfilePage() {
                     <CardTitle>Data Management</CardTitle>
                     <CardDescription>Export, import, or reset your financial data.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
-                     <Button variant="outline" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export My Data</Button>
-                     <Button variant="outline" onClick={handleSpreadsheetExport}><FileSpreadsheet className="mr-2 h-4 w-4" />Export to Spreadsheet</Button>
-                     <Button variant="outline" onClick={() => importFileInputRef.current?.click()}>Import Data</Button>
+                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                     <Button variant="outline" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export JSON</Button>
+                     <Button variant="outline" onClick={handleSpreadsheetExport}><FileSpreadsheet className="mr-2 h-4 w-4" />Export Excel</Button>
+                     <Button variant="outline" onClick={() => importFileInputRef.current?.click()}>Import from JSON</Button>
                      <Button variant="secondary" onClick={handleSeedData}>Seed Dummy Data</Button>
-                     <Button variant="destructive" onClick={() => setResetConfirmOpen(true)}>Reset Data</Button>
+                     <Button variant="destructive" onClick={() => setResetConfirmOpen(true)}>Reset All Data</Button>
+                     <Button variant="outline" onClick={() => setIsReportDialogOpen(true)} className="lg:col-span-3">
+                        <Printer className="mr-2 h-4 w-4" />
+                        Download Report
+                    </Button>
                      <input
                         type="file"
                         ref={importFileInputRef}
@@ -732,10 +736,7 @@ export default function ProfilePage() {
                         onChange={handleImportFileSelect}
                     />
                 </CardContent>
-                <CardFooter className='flex-col gap-y-4 items-start'>
-                     <Button variant="outline" onClick={() => setIsReportDialogOpen(true)}>
-                        Download Report
-                    </Button>
+                <CardFooter>
                     <p className='text-xs text-muted-foreground'>
                         <strong>Warning:</strong> Importing or resetting data will permanently overwrite or delete all current financial data in your account. Your user profile will not be affected.
                     </p>

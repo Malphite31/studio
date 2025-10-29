@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CASH_ON_HAND_WALLET } from '@/lib/data';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import TransactionReport from '@/components/transaction-report';
-import { isWithinInterval } from 'date-fns';
+import { isWithinInterval, isValid } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 
 
@@ -456,8 +456,8 @@ export default function DashboardPage() {
 
         const dateInterval = { start: startDate, end: endDate };
 
-        const filteredExpenses = printAll ? expenses || [] : expenses?.filter(e => isWithinInterval(toDate(e.date), dateInterval)) || [];
-        const filteredIncome = includeIncome ? (printAll ? income || [] : income?.filter(i => isWithinInterval(toDate(i.date), dateInterval)) || []) : [];
+        const filteredExpenses = printAll ? expenses || [] : expenses?.filter(e => isValid(toDate(e.date)) && isWithinInterval(toDate(e.date), dateInterval)) || [];
+        const filteredIncome = includeIncome ? (printAll ? income || [] : income?.filter(i => isValid(toDate(i.date)) && isWithinInterval(toDate(i.date), dateInterval)) || []) : [];
         const filteredWishlist = includeWishlist ? (printAll ? wishlistItems || [] : wishlistItems || []) : [];
         const filteredBudgets = includeBudget ? budgetGoals : [];
         
