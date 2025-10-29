@@ -4,24 +4,24 @@
 
 @layer base {
   :root {
-    --background: 240 5% 96%; /* Lighter cool gray */
-    --foreground: 240 10% 3.9%;
-    --card: 240 5% 96%;
-    --card-foreground: 240 10% 3.9%;
+    --background: 40 33% 96%; /* Warm Off-White */
+    --foreground: 30 20% 12%; /* Dark Sepia Brown */
+    --card: 40 33% 96%;
+    --card-foreground: 30 20% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 30 20% 12%;
     --primary: 34 92% 56%; /* Vibrant Orange */
     --primary-foreground: 30 0% 100%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --secondary: 100 10% 95%; /* Light Sage */
+    --secondary-foreground: 30 20% 12%;
+    --muted: 100 10% 95%;
+    --muted-foreground: 30 15% 45%;
     --accent: 262 84% 50%; /* Deep Purple */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
     --ring: 34 92% 56%;
     --radius: 0.75rem;
 
@@ -33,24 +33,24 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --background: 30 10% 10%; /* Dark Warm Gray */
+    --foreground: 40 20% 95%; /* Light Sepia */
+    --card: 30 10% 10%;
+    --card-foreground: 40 20% 95%;
+    --popover: 30 10% 10%;
+    --popover-foreground: 40 20% 95%;
     --primary: 34 92% 56%; /* Vibrant Orange */
     --primary-foreground: 30 0% 100%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --secondary: 30 8% 18%; /* Deeper Warm Gray */
+    --secondary-foreground: 40 20% 95%;
+    --muted: 30 8% 18%;
+    --muted-foreground: 40 15% 65%;
     --accent: 262 84% 60%; /* Lighter Purple */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+    --border: 30 8% 18%;
+    --input: 30 8% 18%;
     --ring: 34 92% 56%;
     
     --chart-1: 34 92% 56%;
