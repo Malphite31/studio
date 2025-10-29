@@ -1,6 +1,6 @@
 'use client';
 import type { LucideIcon } from 'lucide-react';
-import { Award, BarChart, BookOpen, Bot, Briefcase, Calendar, CircleDollarSign, Coffee, CreditCard, Droplets, Dumbbell, Feather, File, Flame, Gem, Gift, Globe, Heart, Home, Key, Landmark, Layers, Leaf, Lightbulb, Lock, Medal, Megaphone, Moon, MoreHorizontal, Mouse, Pen, PiggyBank, Pilcrow, Plane, Plug, Puzzle, Quote, School, Scroll, Search, Settings, Shield, ShoppingBag, ShoppingCart, Smile, Sparkles, Speaker, Star, Sun, Sword, ThumbsUp, Timer, ToggleLeft, ToyBrick, Trophy, Umbrella, User, Video, Wallet, Watch, Wind, Zap } from 'lucide-react';
+import { Award, BarChart, BookOpen, Bot, Briefcase, Calendar, CircleDollarSign, Coffee, CreditCard, Droplets, Dumbbell, Feather, File, Flame, Gem, Gift, Globe, HandCoins, Heart, Home, Key, Landmark, Layers, Leaf, Lightbulb, Lock, Medal, Megaphone, Moon, MoreHorizontal, Mouse, Pen, PiggyBank, Pilcrow, Plane, Plug, Puzzle, Quote, School, Scroll, Search, Settings, Shield, ShoppingBag, ShoppingCart, Smile, Sparkles, Speaker, Star, Sun, Sword, ThumbsUp, Timer, ToggleLeft, ToyBrick, Trophy, Umbrella, User, Video, Wallet, Watch, Wind, Zap } from 'lucide-react';
 import type { UserDataAggregate, Achievement } from './types';
 
 export interface AchievementData {
