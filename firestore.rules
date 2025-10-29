@@ -2,66 +2,50 @@
  * @fileoverview Firestore Security Rules for SpendWise application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model.  Users can only
- * access their own data.  No cross-user access is permitted except
- * where explicitly specified.
+ * This ruleset enforces a strict user-ownership model for all data. Each user
+ * has complete control over their own data (profile, expenses, categories,
+ * budgets, wishlist, IOUs, income, wallets and achievements). No data is
+ * publicly accessible, and users cannot access each other's data.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, with subcollections for
- * expenses, categories, budgets, wishlist items, IOUs, income, e-wallets, and achievements.
+ * All data is nested under the /users/{userId} collection, ensuring a clear
+ * separation of user data.
  *
  * Key Security Decisions:
- * - User listing is disallowed.
- * - All write operations require a valid, authenticated user.
- * - Only the authenticated user can create, update, or delete resources under their own user ID.
- * - We are not validating the data shape in this prototyping phase.
- *
- * Denormalization for Authorization:
- * - Each document within a user's subcollections should contain a `userId` field
- *   that matches the `userId` in the path. This is enforced during creation
- *   and immutably maintained during updates.
+ * - User listing is disallowed to prevent enumeration.
+ * - All write operations (create, update, delete) are strictly controlled by
+ *   ownership checks.
+ * - Read operations (get, list) are allowed only for the owner of the data.
+ * - Data consistency between the path and document's internal fields is enforced
+ *   on both create and update operations to maintain ownership.
+ * - In this prototyping mode, data validation is relaxed to focus on
+ *   authorization. Only critical fields for relational integrity are validated.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
-     * @returns {boolean} True if the request is authenticated, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId - The user ID to compare against the authenticated user ID.
-     * @returns {boolean} True if the user IDs match, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID and resource exists.
-     * @param {string} userId - The user ID to compare against the authenticated user ID.
-     * @returns {boolean} True if the user IDs match and resource exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-
-    /**
-     * @description Rules for user profile documents.
+     * @description Secure user profiles. Only the user can read/write their own profile.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user creates their own profile with matching user ID.
-     * @allow (get, update, delete) - Authenticated user reads/updates/deletes their own profile with matching user ID.
-     * @deny (create) - Unauthenticated user tries to create a profile.
-     * @deny (get, update, delete) - Authenticated user tries to access another user's profile.
+     * @allow (create) - User with UID 'user123' can create their profile at /users/user123 if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can get their profile at /users/user123.
+     * @allow (update) - User with UID 'user123' can update their profile at /users/user123.
+     * @allow (delete) - User with UID 'user123' can delete their profile at /users/user123.
+     * @deny (create) - User with UID 'user456' cannot create a profile at /users/user123.
+     * @deny (get) - User with UID 'user456' cannot get the profile at /users/user123.
+     * @deny (update) - User with UID 'user456' cannot update the profile at /users/user123.
+     * @deny (delete) - User with UID 'user456' cannot delete the profile at /users/user123.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId) && request.resource.data.id == userId;
@@ -70,15 +54,27 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for expense documents.
+     * @description Secure expenses. Only the user can read/write their own expenses.
      * @path /users/{userId}/expenses/{expenseId}
-     * @allow (create) - Authenticated user creates an expense under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own expenses under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an expense.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's expenses.
+     * @allow (create) - User with UID 'user123' can create an expense at /users/user123/expenses/expense1 if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can get an expense at /users/user123/expenses/expense1.
+     * @allow (update) - User with UID 'user123' can update an expense at /users/user123/expenses/expense1.
+     * @allow (delete) - User with UID 'user123' can delete an expense at /users/user123/expenses/expense1.
+     * @deny (create) - User with UID 'user456' cannot create an expense at /users/user123/expenses/expense1.
+     * @deny (get) - User with UID 'user456' cannot get the expense at /users/user123/expenses/expense1.
+     * @deny (update) - User with UID 'user456' cannot update the expense at /users/user123/expenses/expense1.
+     * @deny (delete) - User with UID 'user456' cannot delete the expense at /users/user123/expenses/expense1.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/expenses/{expenseId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+       function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -87,15 +83,26 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for category documents.
+     * @description Secure categories. Only the user can read/write their own categories.
      * @path /users/{userId}/categories/{categoryId}
-     * @allow (create) - Authenticated user creates a category under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own categories under their user ID.
-     * @deny (create) - Unauthenticated user tries to create a category.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's categories.
+     * @allow (create) - User with UID 'user123' can create a category at /users/user123/categories/category1 if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can get a category at /users/user123/categories/category1.
+     * @allow (update) - User with UID 'user123' can update a category at /users/user123/categories/category1.
+     * @allow (delete) - User with UID 'user123' can delete a category at /users/user123/categories/category1.
+     * @deny (create) - User with UID 'user456' cannot create a category at /users/user123/categories/category1.
+     * @deny (get) - User with UID 'user456' cannot get the category at /users/user123/categories/category1.
+     * @deny (update) - User with UID 'user456' cannot update the category at /users/user123/categories/category1.
+     * @deny (delete) - User with UID 'user456' cannot delete the category at /users/user123/categories/category1.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/categories/{categoryId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -104,15 +111,26 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for budget documents.
+     * @description Secure budgets. Only the user can read/write their own budgets.
      * @path /users/{userId}/budgets/{budgetId}
-     * @allow (create) - Authenticated user creates a budget under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own budgets under their user ID.
-     * @deny (create) - Unauthenticated user tries to create a budget.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's budgets.
+     * @allow (create) - User with UID 'user123' can create a budget at /users/user123/budgets/budget1 if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can get a budget at /users/user123/budgets/budget1.
+     * @allow (update) - User with UID 'user123' can update a budget at /users/user123/budgets/budget1.
+     * @allow (delete) - User with UID 'user123' can delete a budget at /users/user123/budgets/budget1.
+     * @deny (create) - User with UID 'user456' cannot create a budget at /users/user123/budgets/budget1.
+     * @deny (get) - User with UID 'user456' cannot get the budget at /users/user123/budgets/budget1.
+     * @deny (update) - User with UID 'user456' cannot update the budget at /users/user123/budgets/budget1.
+     * @deny (delete) - User with UID 'user456' cannot delete the budget at /users/user123/budgets/budget1.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/budgets/{budgetId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -121,15 +139,26 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for wishlist documents.
+     * @description Secure wishlist items. Only the user can read/write their own wishlist items.
      * @path /users/{userId}/wishlist/{wishlistId}
-     * @allow (create) - Authenticated user creates a wishlist item under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own wishlist items under their user ID.
-     * @deny (create) - Unauthenticated user tries to create a wishlist item.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's wishlist items.
+     * @allow (create) - User with UID 'user123' can create a wishlist item at /users/user123/wishlist/item1 if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can get a wishlist item at /users/user123/wishlist/item1.
+     * @allow (update) - User with UID 'user123' can update a wishlist item at /users/user123/wishlist/item1.
+     * @allow (delete) - User with UID 'user123' can delete a wishlist item at /users/user123/wishlist/item1.
+     * @deny (create) - User with UID 'user456' cannot create a wishlist item at /users/user123/wishlist/item1.
+     * @deny (get) - User with UID 'user456' cannot get the wishlist item at /users/user123/wishlist/item1.
+     * @deny (update) - User with UID 'user456' cannot update the wishlist item at /users/user123/wishlist/item1.
+     * @deny (delete) - User with UID 'user456' cannot delete the wishlist item at /users/user123/wishlist/item1.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/wishlist/{wishlistId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -138,15 +167,26 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for iou documents.
+     * @description Secure IOUs. Only the user can read/write their own IOUs.
      * @path /users/{userId}/ious/{iouId}
-     * @allow (create) - Authenticated user creates an IOU under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own IOUs under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an IOU.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's IOUs.
+     * @allow (create) - User with UID 'user123' can create an IOU at /users/user123/ious/iou1 if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can get an IOU at /users/user123/ious/iou1.
+     * @allow (update) - User with UID 'user123' can update an IOU at /users/user123/ious/iou1.
+     * @allow (delete) - User with UID 'user123' can delete an IOU at /users/user123/ious/iou1.
+     * @deny (create) - User with UID 'user456' cannot create an IOU at /users/user123/ious/iou1.
+     * @deny (get) - User with UID 'user456' cannot get the IOU at /users/user123/ious/iou1.
+     * @deny (update) - User with UID 'user456' cannot update the IOU at /users/user123/ious/iou1.
+     * @deny (delete) - User with UID 'user456' cannot delete the IOU at /users/user123/ious/iou1.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/ious/{iouId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -155,15 +195,26 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for income documents.
+     * @description Secure income. Only the user can read/write their own income.
      * @path /users/{userId}/income/{incomeId}
-     * @allow (create) - Authenticated user creates an income entry under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own income entries under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an income entry.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's income entries.
+     * @allow (create) - User with UID 'user123' can create an income entry at /users/user123/income/income1 if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can get an income entry at /users/user123/income/income1.
+     * @allow (update) - User with UID 'user123' can update an income entry at /users/user123/income/income1.
+     * @allow (delete) - User with UID 'user123' can delete an income entry at /users/user123/income/income1.
+     * @deny (create) - User with UID 'user456' cannot create an income entry at /users/user123/income/income1.
+     * @deny (get) - User with UID 'user456' cannot get the income entry at /users/user123/income/income1.
+     * @deny (update) - User with UID 'user456' cannot update the income entry at /users/user123/income/income1.
+     * @deny (delete) - User with UID 'user456' cannot delete the income entry at /users/user123/income/income1.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/income/{incomeId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -172,15 +223,26 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for ewallet documents.
+     * @description Secure E-Wallets. Only the user can read/write their own E-Wallets.
      * @path /users/{userId}/wallets/{walletId}
-     * @allow (create) - Authenticated user creates an ewallet under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own ewallets under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an ewallet.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's ewallets.
+     * @allow (create) - User with UID 'user123' can create a wallet at /users/user123/wallets/wallet1 if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can get a wallet at /users/user123/wallets/wallet1.
+     * @allow (update) - User with UID 'user123' can update a wallet at /users/user123/wallets/wallet1.
+     * @allow (delete) - User with UID 'user123' can delete a wallet at /users/user123/wallets/wallet1.
+     * @deny (create) - User with UID 'user456' cannot create a wallet at /users/user123/wallets/wallet1.
+     * @deny (get) - User with UID 'user456' cannot get the wallet at /users/user123/wallets/wallet1.
+     * @deny (update) - User with UID 'user456' cannot update the wallet at /users/user123/wallets/wallet1.
+     * @deny (delete) - User with UID 'user456' cannot delete the wallet at /users/user123/wallets/wallet1.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/wallets/{walletId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
@@ -189,15 +251,26 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for achievement documents.
+     * @description Secure achievements. Only the user can read/write their own achievements.
      * @path /users/{userId}/achievements/{achievementId}
-     * @allow (create) - Authenticated user creates an achievement under their own user ID.
-     * @allow (get, list, update, delete) - Authenticated user reads/lists/updates/deletes their own achievements under their user ID.
-     * @deny (create) - Unauthenticated user tries to create an achievement.
-     * @deny (get, list, update, delete) - Authenticated user tries to access another user's achievements.
+     * @allow (create) - User with UID 'user123' can create an achievement at /users/user123/achievements/achievement1 if request.auth.uid == 'user123'.
+     * @allow (get) - User with UID 'user123' can get an achievement at /users/user123/achievements/achievement1.
+     * @allow (update) - User with UID 'user123' can update an achievement at /users/user123/achievements/achievement1.
+     * @allow (delete) - User with UID 'user123' can delete an achievement at /users/user123/achievements/achievement1.
+     * @deny (create) - User with UID 'user456' cannot create an achievement at /users/user123/achievements/achievement1.
+     * @deny (get) - User with UID 'user456' cannot get the achievement at /users/user123/achievements/achievement1.
+     * @deny (update) - User with UID 'user456' cannot update the achievement at /users/user123/achievements/achievement1.
+     * @deny (delete) - User with UID 'user456' cannot delete the achievement at /users/user123/achievements/achievement1.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/achievements/{achievementId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+        function isExistingOwner(userId) {
+          return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
