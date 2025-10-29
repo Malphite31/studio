@@ -7,6 +7,7 @@ import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import * as XLSX from 'xlsx';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -437,91 +438,103 @@ export default function ProfilePage() {
             toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to export data.' });
             return;
         }
-        toast({ title: 'Exporting...', description: 'Gathering your data for spreadsheet export.' });
+        toast({ title: 'Exporting...', description: 'Generating your styled Excel report.' });
 
-        const escapeCsvCell = (cell: any) => {
-            if (cell === null || cell === undefined) {
-                return '';
-            }
-            const stringCell = String(cell);
-            if (stringCell.includes(',')) {
-                return `"${stringCell.replace(/"/g, '""')}"`;
-            }
-            return stringCell;
-        };
+        const wb = XLSX.utils.book_new();
 
-        const formatDateForCsv = (date: Date | Timestamp | undefined) => {
+        const formatDateForExcel = (date: Date | Timestamp | undefined) => {
             if (!date) return '';
             const d = date instanceof Timestamp ? date.toDate() : date;
             return isValid(d) ? format(d, 'yyyy-MM-dd HH:mm:ss') : '';
         };
 
-        let csvContent = '';
+        const headerStyle = { font: { bold: true } };
 
-        // Function to create a CSV section from an array of objects
-        const createCsvSection = (title: string, data: any[], headers: string[], rowMapper: (item: any) => any[]) => {
-            csvContent += `${title}\r\n`;
-            csvContent += headers.map(escapeCsvCell).join(',') + '\r\n';
-            data.forEach(item => {
-                const row = rowMapper(item);
-                csvContent += row.map(escapeCsvCell).join(',') + '\r\n';
-            });
-            csvContent += '\r\n'; // Add a blank line between sections
-        };
+        // --- Summary Sheet ---
+        const totalIncome = income?.reduce((sum, i) => sum + i.amount, 0) || 0;
+        const totalExpenses = expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
+        const netBalance = totalIncome - totalExpenses;
+        const summaryData = [
+            ['PennyWise Financial Report', ''],
+            ['Generated On', format(new Date(), 'yyyy-MM-dd HH:mm:ss')],
+            [],
+            ['Category', 'Amount'],
+            ['Total Income', totalIncome],
+            ['Total Expenses', totalExpenses],
+            ['Net Balance', netBalance],
+        ];
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        summaryWs['A1'].s = { font: { bold: true, sz: 16 } };
+        summaryWs['A4'].s = headerStyle;
+        summaryWs['B4'].s = headerStyle;
+        summaryWs['B5'].z = '"₱"#,##0.00';
+        summaryWs['B6'].z = '"₱"#,##0.00';
+        summaryWs['B7'].z = '"₱"#,##0.00';
+        summaryWs['!cols'] = [{wch: 25}, {wch: 15}];
+        XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
 
-        // Income
-        if (income?.length) {
-            createCsvSection('Income', income, ['Date', 'Source', 'Amount', 'Wallet'], (item: Income) => [
-                formatDateForCsv(item.date),
-                item.name,
-                item.amount,
-                allWallets.find(w => w.id === item.walletId)?.name || 'N/A'
-            ]);
+
+        const createSheet = (title: string, data: any[], headers: string[], rowMapper: (item: any) => any[]) => {
+            if (!data || data.length === 0) return;
+            
+            const body = data.map(rowMapper);
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...body]);
+            
+            // Style Headers
+            const range = XLSX.utils.decode_range(ws['!ref']!);
+            for(let C = range.s.c; C <= range.e.c; ++C) {
+                const address = XLSX.utils.encode_cell({r: 0, c: C});
+                if(!ws[address]) continue;
+                ws[address].s = headerStyle;
+            }
+
+            // Auto-fit columns
+            const cols = headers.map((_, i) => ({
+                wch: Math.max(...[headers[i].length, ...body.map(row => String(row[i] || '').length)]) + 2
+            }));
+            ws['!cols'] = cols;
+
+            XLSX.utils.book_append_sheet(wb, ws, title);
         }
 
-        // Expenses
-        if (expenses?.length) {
-            createCsvSection('Expenses', expenses, ['Date', 'Description', 'Category', 'Amount', 'Payment Method'], (item: Expense) => [
-                formatDateForCsv(item.date),
-                item.name,
-                item.category,
-                item.amount,
-                item.paymentMethod || 'N/A'
-            ]);
-        }
-        
-        // Debts & Loans
-        if (ious?.length) {
-            createCsvSection('Debts & Loans', ious, ['Name', 'Type', 'Amount', 'Due Date', 'Status'], (item: Iou) => [
-                item.name,
-                item.type,
-                item.amount,
-                formatDateForCsv(item.dueDate),
-                item.paid ? 'Paid' : 'Unpaid'
-            ]);
-        }
+        // --- Income Sheet ---
+        createSheet('Income', income || [], ['Date', 'Source', 'Amount', 'Wallet'], (item: Income) => [
+            formatDateForExcel(item.date),
+            item.name,
+            { v: item.amount, t: 'n', z: '"₱"#,##0.00' },
+            allWallets.find(w => w.id === item.walletId)?.name || 'N/A'
+        ]);
 
-        // Wishlist
-        if (wishlistItems?.length) {
-            createCsvSection('Wishlist', wishlistItems, ['Item', 'Target Amount', 'Saved Amount', 'Progress (%)', 'Status'], (item: WishlistItem) => [
-                item.name,
-                item.targetAmount,
-                item.savedAmount,
-                ((item.savedAmount / item.targetAmount) * 100).toFixed(0),
-                item.purchased ? 'Purchased' : 'Saving'
-            ]);
-        }
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'pennywise_export.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast({ title: 'Export Complete!', description: 'Your CSV file has been downloaded.' });
+        // --- Expenses Sheet ---
+        createSheet('Expenses', expenses || [], ['Date', 'Description', 'Category', 'Amount', 'Payment Method'], (item: Expense) => [
+            formatDateForExcel(item.date),
+            item.name,
+            item.category,
+            { v: item.amount, t: 'n', z: '"₱"#,##0.00' },
+            item.paymentMethod || 'N/A'
+        ]);
+
+        // --- Debts & Loans Sheet ---
+        createSheet('Debts & Loans', ious || [], ['Name', 'Type', 'Amount', 'Due Date', 'Status'], (item: Iou) => [
+            item.name,
+            item.type,
+            { v: item.amount, t: 'n', z: '"₱"#,##0.00' },
+            formatDateForExcel(item.dueDate),
+            item.paid ? 'Paid' : 'Unpaid'
+        ]);
+
+        // --- Wishlist Sheet ---
+        createSheet('Wishlist', wishlistItems || [], ['Item', 'Target Amount', 'Saved Amount', 'Progress (%)', 'Status'], (item: WishlistItem) => [
+            item.name,
+            { v: item.targetAmount, t: 'n', z: '"₱"#,##0.00' },
+            { v: item.savedAmount, t: 'n', z: '"₱"#,##0.00' },
+            { v: (item.savedAmount / item.targetAmount), t: 'n', z: '0%' },
+            item.purchased ? 'Purchased' : 'Saving'
+        ]);
+
+        XLSX.writeFile(wb, "PennyWise_Report.xlsx");
+
+        toast({ title: 'Export Complete!', description: 'Your styled Excel report has been downloaded.' });
     };
 
 
@@ -740,5 +753,3 @@ export default function ProfilePage() {
     </>
   );
 }
-
-    
